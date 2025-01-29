@@ -63,7 +63,7 @@ resource "aws_rds_cluster" "principal_cluster" {
   engine                          = each.value["engine"]
   engine_mode                     = each.value["engine_mode"]
   engine_version                  = each.value["engine_version"]
-  cluster_identifier              = join("-", tolist([var.client, each.key ,var.environment, "cluster", var.service]))
+  cluster_identifier              = join("-", tolist([var.client, var.project, var.environment, "cluster", each.key, var.service]))
   database_name                   = each.value["database_name"]
   master_username                 = each.value["master_username"]
   port                            = each.value["port"]
