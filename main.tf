@@ -80,7 +80,7 @@ resource "aws_rds_cluster" "principal_cluster" {
   deletion_protection             = each.value["deletion_protection"]
   copy_tags_to_snapshot           = each.value["copy_tags_to_snapshot"]
   enabled_cloudwatch_logs_exports = each.value["enabled_cloudwatch_logs_exports"]
-  tags                            = merge({ Name = "${join("-", tolist([var.client, each.key,var.environment, "cluster", var.service]))}" })
+  tags                            = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "cluster", each.key, var.service]))}" })
   depends_on = [ aws_rds_cluster_parameter_group.principal_parameter ]
 }
 
@@ -127,7 +127,7 @@ resource "aws_rds_cluster" "secondary_cluster" {
   engine                          = each.value["engine"]
   engine_mode                     = each.value["engine_mode"]
   engine_version                  = each.value["engine_version"]
-  cluster_identifier              = join("-", tolist([var.client, each.key, var.environment, "cluster", var.service]))
+  cluster_identifier              = join("-", tolist([var.client, var.project, var.environment, "cluster", each.key, var.service]))
   port                            = each.value["port"]
   vpc_security_group_ids          = each.value["vpc_security_group_ids"]
   db_subnet_group_name            = aws_db_subnet_group.secondary_subnet_group[each.key].name
@@ -140,7 +140,7 @@ resource "aws_rds_cluster" "secondary_cluster" {
   deletion_protection             = each.value["deletion_protection"]
   copy_tags_to_snapshot           = each.value["copy_tags_to_snapshot"]
   enabled_cloudwatch_logs_exports = each.value["enabled_cloudwatch_logs_exports"]
-  tags                            = merge({ Name = "${join("-", tolist([var.client, each.key, var.environment, "cluster", var.service]))}" })
+  tags                            = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "cluster", each.key, var.service]))}" })
   depends_on = [ aws_rds_cluster_parameter_group.secondary_parameter ]
 }
 
@@ -234,10 +234,10 @@ resource "aws_db_subnet_group" "principal_subnet_group" {
   }
 
   provider   = aws.principal
-  name       = join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.value["cluster_application"],"rds"]))
+  name       = join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.value["cluster_application"], var.service]))
   subnet_ids = each.value["subnet_ids"]
   tags       = merge({
-    Name = join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.value["cluster_application"],"rds"]))
+    Name = join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.value["cluster_application"], var.service]))
   })
 }
 
