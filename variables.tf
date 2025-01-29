@@ -1,3 +1,28 @@
+#################################################
+# Common variables
+#################################################
+variable "client" {
+  type = string
+  description = "Client name"
+}
+
+variable "environment" {
+  type = string
+  description = "Environment where resources will be deployed"
+}
+
+variable "project" {
+  type = string  
+  description = "Project name"
+}
+
+variable "service" {
+  type = string
+}
+
+#################################################
+# Variable Database Aurora 
+#################################################
 variable "rds_config" {
   type = list(object({
     create_global_cluster = bool
@@ -21,7 +46,7 @@ variable "rds_config" {
       storage_encrypted               = bool
       kms_key_id                      = string
       port                            = string
-      service                         = string
+      service_database                         = string
       enabled_cloudwatch_logs_exports = list(string)
       copy_tags_to_snapshot           = bool
       cluster_parameter = object({
@@ -53,21 +78,3 @@ variable "rds_config" {
   }))
 }
 
-variable "service" {
-  type = string
-}
-
-variable "client" {
-  type = string
-  description = "Client name"
-}
-
-variable "environment" {
-  type = string
-  description = "Environment where resources will be deployed"
-}
-
-variable "project" {
-  type = string  
-  description = "Project name"
-}

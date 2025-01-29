@@ -10,7 +10,7 @@ resource "aws_rds_global_cluster" "global_db" {
     } if cluster.create_global_cluster
   }
   provider                  = aws.principal
-  global_cluster_identifier = join("-", tolist([var.client, var.project, var.environment, each.key, "glb", var.service]))
+  global_cluster_identifier = join("-", tolist([var.client, var.project,var.environment, each.key, "glb", var.service]))
   engine                    = each.value["engine"]
   engine_version            = each.value["engine_version"]
   database_name             = each.value["database_name"]
@@ -234,7 +234,7 @@ resource "aws_db_subnet_group" "principal_subnet_group" {
   }
 
   provider   = aws.principal
-  name       = join("-", tolist([var.client, each.key ,var.environment, "sn-grp", "db"]))
+  name       = join("-", tolist([var.client, var.project, var.environment, each.key , "sn-grp", "db"]))
   subnet_ids = each.value["subnet_ids"]
   tags       = merge({
     Name = join("-", tolist([var.client, each.key ,var.environment, "sn-grp", "db"]))
