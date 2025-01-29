@@ -166,7 +166,7 @@ resource "aws_rds_cluster_instance" "principal_cluster_instances" {
     }]]]) : "${item.cluster_application}-instance-${item.instance_index}" => item if item.principal
   }
   provider                              = aws.principal
-  identifier                            = join("-", tolist([var.client, var.project, var.environment, "rds", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))
+  identifier                            = join("-", tolist([var.client, var.project, var.environment, "rds-instance", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))
   cluster_identifier                    = aws_rds_cluster.principal_cluster["${each.value.cluster_application}-${each.value.region}-${each.value.rds_index}"].id
   instance_class                        = each.value["instance_class"]
   engine                                = aws_rds_cluster.principal_cluster["${each.value.cluster_application}-${each.value.region}-${each.value.rds_index}"].engine
