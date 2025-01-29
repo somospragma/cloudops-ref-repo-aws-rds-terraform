@@ -255,9 +255,9 @@ resource "aws_db_subnet_group" "secondary_subnet_group" {
     }]]) : "${item.service}-${item.region}-${item.rds_index}" => item if !item.principal
   }
   provider   = aws.secondary
-  name       = join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.value["cluster_application"], var.service]))
+  name       = join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.key, var.service]))
   subnet_ids = each.value["subnet_ids"]
-  tags       = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.value["cluster_application"], var.service]))}" })
+  tags       = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.key, var.service]))}" })
 }
 
 resource "aws_db_parameter_group" "principal_parameter" {
