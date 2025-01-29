@@ -166,7 +166,7 @@ resource "aws_rds_cluster_instance" "principal_cluster_instances" {
     }]]]) : "${item.cluster_application}-instance-${item.instance_index}" => item if item.principal
   }
   provider                              = aws.principal
-  identifier                            = join("-", tolist([var.client, each.value["cluster_application"] , var.environment, "rds", var.service, each.value["instance_index"] + 1]))
+  identifier                            = join("-", tolist([var.client, var.project, var.environment, "rds", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))
   cluster_identifier                    = aws_rds_cluster.principal_cluster["${each.value.cluster_application}-${each.value.region}-${each.value.rds_index}"].id
   instance_class                        = each.value["instance_class"]
   engine                                = aws_rds_cluster.principal_cluster["${each.value.cluster_application}-${each.value.region}-${each.value.rds_index}"].engine
@@ -178,7 +178,7 @@ resource "aws_rds_cluster_instance" "principal_cluster_instances" {
   performance_insights_retention_period = each.value["performance_insights_retention_period"]
   db_parameter_group_name               = try(aws_db_parameter_group.principal_parameter["${each.value.cluster_application}-${each.value.region}-${each.value.rds_index}"].name, null)
   monitoring_interval                   = each.value["monitoring_interval"]
-  tags                                  = merge({ Name = "${join("-", tolist([var.client, each.value["cluster_application"] , var.environment, "rds", var.service, each.value["instance_index"] + 1]))}" })
+  tags                                  = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "rds", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))}" })
 
   depends_on = [ aws_db_parameter_group.principal_parameter ]
 }
@@ -206,7 +206,7 @@ resource "aws_rds_cluster_instance" "secondary_cluster_instances" {
     }]]]) : "${item.service}-instance-${item.instance_index}" => item if !item.principal
   }
   provider                              = aws.secondary
-  identifier                            = join("-", tolist([var.client, each.value["service"] ,var.environment, "rds", var.service, each.value["instance_index"] + 1]))
+  identifier                            = join("-", tolist([var.client, var.project, var.environment, "rds", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))
   cluster_identifier                    = aws_rds_cluster.secondary_cluster["${each.value.service}-${each.value.region}-${each.value.rds_index}"].id
   instance_class                        = each.value["instance_class"]
   engine                                = aws_rds_cluster.secondary_cluster["${each.value.service}-${each.value.region}-${each.value.rds_index}"].engine
@@ -218,7 +218,7 @@ resource "aws_rds_cluster_instance" "secondary_cluster_instances" {
   performance_insights_retention_period = each.value["performance_insights_retention_period"]
   db_parameter_group_name               = try(aws_db_parameter_group.secondary_parameter["${each.value.service}-${each.value.region}-${each.value.rds_index}"].name, null)
   monitoring_interval                   = each.value["monitoring_interval"]
-  tags                                  = merge({ Name = "${join("-", tolist([var.client, each.value["service"] ,var.environment, "rds", var.service, each.value["instance_index"] + 1]))}" })
+  tags                                  = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "rds", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))}" })
 }
 
 resource "aws_db_subnet_group" "principal_subnet_group" {
@@ -255,9 +255,9 @@ resource "aws_db_subnet_group" "secondary_subnet_group" {
     }]]) : "${item.service}-${item.region}-${item.rds_index}" => item if !item.principal
   }
   provider   = aws.secondary
-  name       = join("-", tolist([var.client, each.key ,var.environment, "sn-grp", "db"]))
+  name       = join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.value["cluster_application"], var.service]))
   subnet_ids = each.value["subnet_ids"]
-  tags       = merge({ Name = "${join("-", tolist([var.client, each.key ,var.environment, "sn-grp", "db"]))}" })
+  tags       = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.value["cluster_application"], var.service]))}" })
 }
 
 resource "aws_db_parameter_group" "principal_parameter" {
@@ -275,7 +275,7 @@ resource "aws_db_parameter_group" "principal_parameter" {
     "${item.cluster_application}-${item.region}-${item.rds_index}" => item
   }
   provider   = aws.principal
-  name   = join("-", tolist([var.client, each.key ,var.environment, "instance-parameter", var.service]))
+  name   = join("-", tolist([var.client, var.project, var.environment, "instance-parameter", each.key,  var.service]))
   family = each.value["family"]
 
   dynamic "parameter" {
@@ -307,7 +307,7 @@ resource "aws_db_parameter_group" "secondary_parameter" {
     "${item.service}-${item.region}-${item.rds_index}" => item
   }
   provider   = aws.secondary
-  name   = join("-", tolist([var.client, each.key ,var.environment, "instance-parameter", var.service]))
+  name   = join("-", tolist([var.client, var.project, var.environment, "instance-parameter", each.key,  var.service]))
   family = each.value["family"]
 
   dynamic "parameter" {
@@ -341,7 +341,7 @@ resource "aws_rds_cluster_parameter_group" "principal_parameter" {
     if length(item.parameters) > 0 && item.principal
   }
   provider   = aws.principal
-  name        = join("-", tolist([var.client, each.key ,var.environment, "cluster-parameter", var.service]))
+  name        = join("-", tolist([var.client, var.project, var.environment, "cluster-parameter", each.key ,  var.service]))
   family      = each.value["family"]
   description = each.value["description"]
 
@@ -371,7 +371,7 @@ resource "aws_rds_cluster_parameter_group" "secondary_parameter" {
     if length(item.parameters) > 0 && !item.principal
   }
   provider   = aws.secondary
-  name        = join("-", tolist([var.client, each.key ,var.environment, "cluster-parameter", var.service]))
+  name        = join("-", tolist([var.client, var.project, var.environment, "cluster-parameter", each.key ,  var.service]))
   family      = each.value["family"]
   description = each.value["description"]
 
