@@ -59,8 +59,15 @@ variable "service" {
 
 variable "client" {
   type = string
+  description = "Client name"
 }
 
 variable "environment" {
   type = string
+  description = "Environment where resources will be deployed"
+}
+
+variable "project" {
+  type = string  
+  description = "Project name"
 }

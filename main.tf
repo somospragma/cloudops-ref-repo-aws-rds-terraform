@@ -10,7 +10,7 @@ resource "aws_rds_global_cluster" "global_db" {
     } if cluster.create_global_cluster
   }
   provider                  = aws.principal
-  global_cluster_identifier = join("-", tolist([var.client, var.environment, each.key, "glb", var.service]))
+  global_cluster_identifier = join("-", tolist([var.client, var.project, var.environment, each.key, "glb", var.service]))
   engine                    = each.value["engine"]
   engine_version            = each.value["engine_version"]
   database_name             = each.value["database_name"]
