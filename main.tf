@@ -234,10 +234,10 @@ resource "aws_db_subnet_group" "principal_subnet_group" {
   }
 
   provider   = aws.principal
-  name       = join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.value["cluster_application"], var.service]))
+  name       = join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.key, var.service]))
   subnet_ids = each.value["subnet_ids"]
   tags       = merge({
-    Name = join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.value["cluster_application"], var.service]))
+    Name = join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.key, var.service]))
   })
 }
 
