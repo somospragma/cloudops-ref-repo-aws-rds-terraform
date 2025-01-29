@@ -46,7 +46,7 @@ variable "rds_config" {
       storage_encrypted               = bool
       kms_key_id                      = string
       port                            = string
-      service_database                         = string
+      service                         = string
       enabled_cloudwatch_logs_exports = list(string)
       copy_tags_to_snapshot           = bool
       cluster_parameter = object({
