@@ -178,7 +178,7 @@ resource "aws_rds_cluster_instance" "principal_cluster_instances" {
   performance_insights_retention_period = each.value["performance_insights_retention_period"]
   db_parameter_group_name               = try(aws_db_parameter_group.principal_parameter["${each.value.cluster_application}-${each.value.region}-${each.value.rds_index}"].name, null)
   monitoring_interval                   = each.value["monitoring_interval"]
-  tags                                  = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "rds", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))}" })
+  tags                                  = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "rds-instance", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))}" })
 
   depends_on = [ aws_db_parameter_group.principal_parameter ]
 }
@@ -206,7 +206,7 @@ resource "aws_rds_cluster_instance" "secondary_cluster_instances" {
     }]]]) : "${item.service}-instance-${item.instance_index}" => item if !item.principal
   }
   provider                              = aws.secondary
-  identifier                            = join("-", tolist([var.client, var.project, var.environment, "rds", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))
+  identifier                            = join("-", tolist([var.client, var.project, var.environment, "rds-instance", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))
   cluster_identifier                    = aws_rds_cluster.secondary_cluster["${each.value.service}-${each.value.region}-${each.value.rds_index}"].id
   instance_class                        = each.value["instance_class"]
   engine                                = aws_rds_cluster.secondary_cluster["${each.value.service}-${each.value.region}-${each.value.rds_index}"].engine
@@ -218,7 +218,7 @@ resource "aws_rds_cluster_instance" "secondary_cluster_instances" {
   performance_insights_retention_period = each.value["performance_insights_retention_period"]
   db_parameter_group_name               = try(aws_db_parameter_group.secondary_parameter["${each.value.service}-${each.value.region}-${each.value.rds_index}"].name, null)
   monitoring_interval                   = each.value["monitoring_interval"]
-  tags                                  = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "rds", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))}" })
+  tags                                  = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "rds-instance", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))}" })
 }
 
 resource "aws_db_subnet_group" "principal_subnet_group" {
