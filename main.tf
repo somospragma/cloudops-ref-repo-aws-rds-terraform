@@ -1,4 +1,3 @@
-
 resource "aws_rds_global_cluster" "global_db" {
   for_each = {
     for cluster in var.rds_config : cluster.cluster_application => {
@@ -16,7 +15,6 @@ resource "aws_rds_global_cluster" "global_db" {
   database_name             = each.value["database_name"]
   deletion_protection       = each.value["deletion_protection"]
   storage_encrypted         = true
-
 }
 
 resource "aws_rds_cluster" "principal_cluster" {
@@ -241,7 +239,6 @@ resource "aws_db_subnet_group" "principal_subnet_group" {
   })
 }
 
-
 resource "aws_db_subnet_group" "secondary_subnet_group" {
   for_each = {
     for item in flatten([for cluster in var.rds_config : [for rds in cluster.cluster_config : {
@@ -291,6 +288,7 @@ resource "aws_db_parameter_group" "principal_parameter" {
     create_before_destroy = true
   }
 }
+
 resource "aws_db_parameter_group" "secondary_parameter" {
 
   for_each = {
@@ -324,7 +322,6 @@ resource "aws_db_parameter_group" "secondary_parameter" {
   }
 }
 
-
 resource "aws_rds_cluster_parameter_group" "principal_parameter" {
   for_each = {
     for item in flatten([for cluster in var.rds_config : [for rds in cluster.cluster_config : {
@@ -353,8 +350,8 @@ resource "aws_rds_cluster_parameter_group" "principal_parameter" {
       apply_method = parameter.value["apply_method"]
     }
   }
-
 }
+
 resource "aws_rds_cluster_parameter_group" "secondary_parameter" {
   for_each = {
     for item in flatten([for cluster in var.rds_config : [for rds in cluster.cluster_config : {
@@ -383,5 +380,4 @@ resource "aws_rds_cluster_parameter_group" "secondary_parameter" {
       apply_method = parameter.value["apply_method"]
     }
   }
-
 }

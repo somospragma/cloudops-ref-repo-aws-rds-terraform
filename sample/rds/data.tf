@@ -19,7 +19,6 @@ data "aws_subnet" "database_subnet_2" {
   }
 }
 
-
 data "aws_subnet" "private_subnet_1" {
   filter {
     name   = "tag:Name"
@@ -34,8 +33,4 @@ data "aws_subnet" "private_subnet_2" {
   }
 }
 
-
-
-
 data "aws_caller_identity" "current" {}
-

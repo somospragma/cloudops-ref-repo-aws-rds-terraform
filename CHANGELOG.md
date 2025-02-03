@@ -1,73 +1,24 @@
-# RELEASE NOTES
+# Changelog
 
-## v2.0.0 - 12/09/2024
+Todos los cambios notables en este proyecto serán documentados en este archivo.
 
-- add `aws_rds_global_cluster` to ensure global clusters in production databases
+El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-- Change `rds_config`, adding validation to global cluster
+## [1.0.0] - YYYY-MM-DD
 
-- Adding `providers.tf` to ensure module can be deployed with different providers
+### Añadido
+- N/A
 
-- Change in all resources to ensure relation between providers and new rds config
+### Cambiado
+- N/A
 
-- Is strongly recommended to implement this version only in production environments, while tests of implementation in previous environments are done
+### Eliminado
+- N/A
 
-## v1.2.11 - 27/08/2024
+### Corregido
+- N/A
 
-
-## v1.2.10 - 27/08/2024
-
-
-## v1.2.9 - 27/08/2024
-
-
-## v1.2.8 - 27/08/2024
-
-
-## v1.2.7 - 27/08/2024
-
-
-## v1.2.6 - 27/08/2024
-
-
-## v1.2.5 - 27/08/2024
-
-
-## v1.2.4 - 27/08/2024
-
-
-## v1.2.3 - 27/08/2024
-
-
-## v1.2.2 - 27/08/2024
-
-
-## v1.2.1 - 27/08/2024
-
-
-## v1.2.0 - 27/08/2024
-
-
-## v1.1.2 - 27/08/2024
-
-
-## v1.1.1 - 27/08/2024
-
-
-## v1.1.0 - 27/08/2024
-
-
-## v1.0.2 - 19/08/2024
-
-
-## v1.0.2 - 19/08/2024
-
-
-## v1.0.1 - 19/08/2024
-
-
-## v1.0.1 - 19/08/2024
-
-
-## v1.0.0 - 19/08/2024
+### Seguridad
+- N/A
 
