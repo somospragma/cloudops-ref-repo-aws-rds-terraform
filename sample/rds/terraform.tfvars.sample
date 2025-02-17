@@ -1,0 +1,53 @@
+###########################################
+########## Common variables ###############
+###########################################
+
+profile     = "profile01"
+aws_region  = "us-east-1"
+environment = "dev"
+client      = "cliente01"
+project     = "proyecto01"
+common_tags = {
+  environment   = "dev"
+  project-name  = "proyecto01"
+  cost-center   = "xxx"
+  owner         = "xxx"
+  area          = "xxx"
+  provisioned   = "xxx"
+  datatype      = "xxx"
+}
+
+###########################################
+############## RDS variables ##############
+###########################################
+
+create_global_cluster                     = false                             # Don't create a global cluster
+cluster_application                       = "xxxxxx"                          
+engine                                    = "aurora-mysql"                    
+engine_version                            = "5.7.mysql_aurora.2.12.4"         
+database_name                             = "xxxxxx"                          
+deletion_protection                       = false                             # Don't enable deletion protection
+
+principal                                 = true                              
+region                                    = "us-east-1"                       # Lowest cost region
+engine_mode                               = "provisioned"                     
+manage_master_user_password               = true                              
+#master_password                          = "xxxxxx2025"                      # Master user password only if manage_master_user_password is false
+master_username                           = "admin"                           
+backup_retention_period                   = 7                                 # Backup retention for 7 days
+skip_final_snapshot                       = true                              # Don't take final snapshot
+preferred_backup_window                   = "00:00-00:30"                     # Backup window
+storage_encrypted                         = false                             # No storage encryption
+kms_key_id                                = ""                                # Default KMS key
+port                                      = "3306"                            
+service                                   = "default"                         
+enabled_cloudwatch_logs_exports           = []                                
+copy_tags_to_snapshot                     = true                              # Copy tags to snapshots
+family                                    = "aurora5.7"                       
+
+instance_class                            = "db.r5.large"                     # Low cost instance (you can change to db.t3.micro if you prefer)
+publicly_accessible                       = false                             # Don't publicly expose the instance
+auto_minor_version_upgrade                = true                              # Automatic updates
+performance_insights_enabled              = false                             # Disable Performance Insights
+#performance_insights_retention_period    = 7                                 # Keep 7 days of performance data
+monitoring_interval                       = 0   
