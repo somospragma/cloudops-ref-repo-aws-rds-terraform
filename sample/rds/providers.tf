@@ -8,7 +8,7 @@ provider "aws" {
   profile = var.profile                                          #Write profile manually (on demand)
 
   assume_role {
-    role_arn = "arn:aws:iam::ACCOUNT_NUMBER:role/ROLE_NAME"      #Write account number and role name manually (on demand)
+     role_arn = "arn:aws:iam::ACCOUNT_NUMBER:role/ROLE_NAME"      #Write account number and role name manually (on demand)
   }
   
   default_tags {
@@ -22,7 +22,7 @@ provider "aws" {
   profile = var.profile                                          #Write profile manually (on demand)
 
   assume_role {
-    role_arn = "arn:aws:iam::ACCOUNT_NUMBER:role/ROLE_NAME"      #Write account number and role name manually (on demand)
+     role_arn = "arn:aws:iam::ACCOUNT_NUMBER:role/ROLE_NAME"      #Write account number and role name manually (on demand)
   }
   
   default_tags {
@@ -35,12 +35,12 @@ provider "aws" {
 ###########################################
 
 terraform {
-  required_version = ">= 0.13.1"
+  required_version = ">= 1.11.4"
 
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = ">=4.31.0"
+      version = ">=5.96.0"
     }
   }
 }

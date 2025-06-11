@@ -6,6 +6,7 @@ resource "aws_rds_global_cluster" "global_db" {
       "engine_version" : cluster.engine_version
       "database_name" : cluster.database_name
       "deletion_protection" : cluster.deletion_protection
+      "storage_encrypted" : cluster.storage_encrypted
     } if cluster.create_global_cluster
   }
   provider                  = aws.principal
@@ -14,7 +15,7 @@ resource "aws_rds_global_cluster" "global_db" {
   engine_version            = each.value["engine_version"]
   database_name             = each.value["database_name"]
   deletion_protection       = each.value["deletion_protection"]
-  storage_encrypted         = true
+  storage_encrypted         = each.value["storage_encrypted"]
 }
 
 resource "aws_rds_cluster" "principal_cluster" {
@@ -45,13 +46,17 @@ resource "aws_rds_cluster" "principal_cluster" {
       "backup_retention_period" : rds.backup_retention_period
       "skip_final_snapshot" : rds.skip_final_snapshot
       "preferred_backup_window" : rds.preferred_backup_window
-      "storage_encrypted" : rds.storage_encrypted
+      "storage_encrypted" : cluster.storage_encrypted
       "kms_key_id" : rds.kms_key_id
       "deletion_protection" : cluster.deletion_protection
       "enabled_cloudwatch_logs_exports" : rds.enabled_cloudwatch_logs_exports
       "port" : rds.port
       "copy_tags_to_snapshot" : rds.copy_tags_to_snapshot
       "cluster_parameter" : rds.cluster_parameter
+      "serverless_deploy" : cluster.serverless_deploy
+      "max_capacity" : rds.cluster_scaling_configuration.max_capacity
+      "min_capacity" : rds.cluster_scaling_configuration.min_capacity
+      "seconds_until_auto_pause" : rds.cluster_scaling_configuration.seconds_until_auto_pause
     }]]) : 
     "${item.cluster_application}-${item.region}-${idx}" => item if item.principal
   }
@@ -66,7 +71,7 @@ resource "aws_rds_cluster" "principal_cluster" {
   master_username                 = each.value["master_username"]
   port                            = each.value["port"]
   manage_master_user_password     = each.value["manage_master_user_password"] ? true : null
-  master_password                 = !each.value["manage_master_user_password"] ? each.value["master_password"] : null
+  master_password                 = !each.value["manage_master_user_password"] ? var.master_password : null
   vpc_security_group_ids          = each.value["vpc_security_group_ids"]
   db_subnet_group_name            = aws_db_subnet_group.principal_subnet_group["${each.key}"].name
   backup_retention_period         = each.value["backup_retention_period"]
@@ -79,6 +84,16 @@ resource "aws_rds_cluster" "principal_cluster" {
   copy_tags_to_snapshot           = each.value["copy_tags_to_snapshot"]
   enabled_cloudwatch_logs_exports = each.value["enabled_cloudwatch_logs_exports"]
   tags                            = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "cluster", each.key, var.service]))}" })
+  
+  dynamic "serverlessv2_scaling_configuration" {
+    for_each = each.value["serverless_deploy"] ? [1] : []
+    content {
+      max_capacity             = each.value["max_capacity"] 
+      min_capacity             = each.value["min_capacity"]
+      seconds_until_auto_pause = each.value["seconds_until_auto_pause"]
+    }
+  }
+  
   depends_on = [ aws_rds_cluster_parameter_group.principal_parameter ]
 }
 
@@ -110,7 +125,7 @@ resource "aws_rds_cluster" "secondary_cluster" {
       "backup_retention_period" : rds.backup_retention_period
       "skip_final_snapshot" : rds.skip_final_snapshot
       "preferred_backup_window" : rds.preferred_backup_window
-      "storage_encrypted" : rds.storage_encrypted
+      "storage_encrypted" : cluster.storage_encrypted
       "kms_key_id" : rds.kms_key_id
       "deletion_protection" : cluster.deletion_protection
       "enabled_cloudwatch_logs_exports" : rds.enabled_cloudwatch_logs_exports
@@ -118,8 +133,13 @@ resource "aws_rds_cluster" "secondary_cluster" {
       "copy_tags_to_snapshot" : rds.copy_tags_to_snapshot
       "cluster_parameter" : rds.cluster_parameter
       "service" : rds.service
+      "serverless_deploy" : cluster.serverless_deploy
+      "max_capacity" : rds.cluster_scaling_configuration.max_capacity
+      "min_capacity" : rds.cluster_scaling_configuration.min_capacity
+      "seconds_until_auto_pause" : rds.cluster_scaling_configuration.seconds_until_auto_pause
     }]]) : "${item.service}-${item.region}-${item.rds_index}" => item if !item.principal
   }
+  
   provider                        = aws.secondary
   global_cluster_identifier       = each.value["create_global_cluster"] ? aws_rds_global_cluster.global_db[each.value["cluster_application"]].id : null
   engine                          = each.value["engine"]
@@ -139,7 +159,17 @@ resource "aws_rds_cluster" "secondary_cluster" {
   copy_tags_to_snapshot           = each.value["copy_tags_to_snapshot"]
   enabled_cloudwatch_logs_exports = each.value["enabled_cloudwatch_logs_exports"]
   tags                            = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "cluster", each.key, var.service]))}" })
-  depends_on = [ aws_rds_cluster_parameter_group.secondary_parameter ]
+  
+  dynamic "serverlessv2_scaling_configuration" {
+    for_each = each.value["serverless_deploy"] ? [1] : []
+    content {
+      max_capacity             = each.value["max_capacity"] 
+      min_capacity             = each.value["min_capacity"]
+      seconds_until_auto_pause = each.value["seconds_until_auto_pause"]
+    }
+  }
+  
+  depends_on = [ aws_rds_cluster_parameter_group.secondary_parameter, aws_rds_cluster_instance.principal_cluster_instances ]
 }
 
 resource "aws_rds_cluster_instance" "principal_cluster_instances" {
@@ -148,7 +178,7 @@ resource "aws_rds_cluster_instance" "principal_cluster_instances" {
   # checkov:skip=CKV_AWS_118: Enhanced monitoring validation is sent as variable
   # checkov:skip=CKV_AWS_226: auto minor update validation is sent as variable
   for_each = {
-    for item in flatten([for cluster in var.rds_config : [for rds in cluster.cluster_config : [for instance in rds.cluster_instances : {
+    for item in flatten([for cluster in var.rds_config : [for rds in cluster.cluster_config : [for index, instance in rds.cluster_instances : {
       "cluster_application" : cluster.cluster_application
       "rds_index" : index(cluster.cluster_config, rds)
       "instance_index" : index(rds.cluster_instances, instance)
@@ -161,6 +191,7 @@ resource "aws_rds_cluster_instance" "principal_cluster_instances" {
       "performance_insights_enabled" : instance.performance_insights_enabled
       "performance_insights_retention_period" : instance.performance_insights_retention_period
       "monitoring_interval" : instance.monitoring_interval
+      "monitoring_role_arn" : instance.monitoring_role_arn
     }]]]) : "${item.cluster_application}-instance-${item.instance_index}" => item if item.principal
   }
   provider                              = aws.principal
@@ -176,6 +207,7 @@ resource "aws_rds_cluster_instance" "principal_cluster_instances" {
   performance_insights_retention_period = each.value["performance_insights_retention_period"]
   db_parameter_group_name               = try(aws_db_parameter_group.principal_parameter["${each.value.cluster_application}-${each.value.region}-${each.value.rds_index}"].name, null)
   monitoring_interval                   = each.value["monitoring_interval"]
+  monitoring_role_arn                   = each.value["monitoring_role_arn"]
   tags                                  = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "rds-instance", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))}" })
 
   depends_on = [ aws_db_parameter_group.principal_parameter ]
@@ -201,6 +233,7 @@ resource "aws_rds_cluster_instance" "secondary_cluster_instances" {
       "performance_insights_enabled" : instance.performance_insights_enabled
       "performance_insights_retention_period" : instance.performance_insights_retention_period
       "monitoring_interval" : instance.monitoring_interval
+      "monitoring_role_arn" : instance.monitoring_role_arn
     }]]]) : "${item.service}-instance-${item.instance_index}" => item if !item.principal
   }
   provider                              = aws.secondary
@@ -216,7 +249,10 @@ resource "aws_rds_cluster_instance" "secondary_cluster_instances" {
   performance_insights_retention_period = each.value["performance_insights_retention_period"]
   db_parameter_group_name               = try(aws_db_parameter_group.secondary_parameter["${each.value.service}-${each.value.region}-${each.value.rds_index}"].name, null)
   monitoring_interval                   = each.value["monitoring_interval"]
+  monitoring_role_arn                   = each.value["monitoring_role_arn"]
   tags                                  = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "rds-instance", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))}" })
+
+  depends_on = [ aws_db_parameter_group.secondary_parameter,  aws_rds_cluster_instance.principal_cluster_instances ]
 }
 
 resource "aws_db_subnet_group" "principal_subnet_group" {
@@ -240,6 +276,7 @@ resource "aws_db_subnet_group" "principal_subnet_group" {
 }
 
 resource "aws_db_subnet_group" "secondary_subnet_group" {
+  provider   = aws.secondary
   for_each = {
     for item in flatten([for cluster in var.rds_config : [for rds in cluster.cluster_config : {
       "cluster_application" : cluster.cluster_application
@@ -251,7 +288,7 @@ resource "aws_db_subnet_group" "secondary_subnet_group" {
 
     }]]) : "${item.service}-${item.region}-${item.rds_index}" => item if !item.principal
   }
-  provider   = aws.secondary
+  
   name       = join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.key, var.service]))
   subnet_ids = each.value["subnet_ids"]
   tags       = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.key, var.service]))}" })

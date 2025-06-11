@@ -22,6 +22,11 @@ variable "service" {
   description = "Service name"
 }
 
+variable "master_password" {
+  type = string
+  description = "Master password"
+}
+
 ###########################################
 ############# RDS variables ###############
 ###########################################
@@ -34,6 +39,8 @@ variable "rds_config" {
     engine_version        = string
     database_name         = string
     deletion_protection   = bool
+    storage_encrypted     = bool
+    serverless_deploy     = bool
     cluster_config = list(object({
       principal                       = bool
       region                          = string
@@ -46,7 +53,6 @@ variable "rds_config" {
       backup_retention_period         = number
       skip_final_snapshot             = bool
       preferred_backup_window         = string
-      storage_encrypted               = bool
       kms_key_id                      = string
       port                            = string
       service                         = string
@@ -61,6 +67,11 @@ variable "rds_config" {
           apply_method = string
         }))
       })
+      cluster_scaling_configuration = object({
+        max_capacity             = string
+        min_capacity             = string
+        seconds_until_auto_pause = string
+      })
       instance_parameter = object({
         family = string
         parameters = list(object({
@@ -70,12 +81,14 @@ variable "rds_config" {
         }))
       })
       cluster_instances = list(object({
+        record_id                             = string
         instance_class                        = string
         publicly_accessible                   = bool
         auto_minor_version_upgrade            = bool
         performance_insights_enabled          = bool
         performance_insights_retention_period = number
         monitoring_interval                   = number
+        monitoring_role_arn                   = string
       }))
     }))
   }))
@@ -110,4 +123,3 @@ variable "rds_config" {
     - cluster_instances.monitoring_interval: (number) Interval, in seconds, between points when Enhanced Monitoring metrics are collected for the DB instance. To disable collecting Enhanced Monitoring metrics, specify 0. The default is 0. Valid Values: 0, 1, 5, 10, 15, 30, 60.
   EOF
 }
-

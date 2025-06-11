@@ -51,6 +51,11 @@ variable "create_global_cluster" {
   description = "If true, a global cluster will be created"
 }
 
+variable "serverless_deploy" {
+  type = bool 
+  description = "If true, a serverless deploy will be executed"
+}
+
 variable "cluster_application" {
   type = string  
   description = "Cluster application name"
@@ -122,10 +127,16 @@ variable "storage_encrypted" {
   description = "Service"
 }
 
-variable "kms_key_id" {
+variable "kms_key_id_principal" {
   type = string
   description = "Amazon Web Services KMS key identifier that is used to encrypt the secret."
 }
+
+variable "kms_key_id_secondary" {
+  type = string
+  description = "Amazon Web Services KMS key identifier that is used to encrypt the secret."
+}
+
 variable "port" {
   type = string
   description = "Database port "
@@ -170,4 +181,32 @@ variable "performance_insights_retention_period" {
 variable "monitoring_interval" {
   type = number
   description = "Interval, in seconds, between points when Enhanced Monitoring metrics are collected for the DB instance. To disable collecting Enhanced Monitoring metrics, specify 0. The default is 0. Valid Values: 0, 1, 5, 10, 15, 30, 60."
+}
+
+variable "monitoring_role_arn" {
+  type = string
+  description = "Role requiered to enable Enhanced Monitoring metrics for the DB instance."
+}
+
+variable "enabled_cloudwatch_logs_exports" {
+  type = list(string)
+  description = "Enable CloudWatch logs exports. Values audit, error, general, iam-db-auth-error, instance, postgresql, slowquery, upgrade"
+}
+
+variable "scaling_max_capacity" {
+  type = number
+  description = "Maximum capacity for an Aurora DB cluster in serverless DB engine mode. Valid Aurora MySQL capacity values are 1, 2, 4, 8, 16, 32, 64, 128, 256. Valid Aurora PostgreSQL capacity values are (2, 4, 8, 16, 32, 64, 192, and 384)."
+  default = null
+}
+
+variable "scaling_min_capacity" {
+  type = number
+  description = "Minimum capacity for an Aurora DB cluster in serverless DB engine mode. Valid Aurora MySQL capacity values are 1, 2, 4, 8, 16, 32, 64, 128, 256. Valid Aurora PostgreSQL capacity values are (2, 4, 8, 16, 32, 64, 192, and 384)."
+  default = null
+}
+
+variable "scaling_seconds_until_auto_pause" {
+  type = number
+  description = "Time, in seconds, before an Aurora DB cluster in serverless mode is paused. Valid values are 300 through 86400"
+  default = null
 }
