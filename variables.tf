@@ -58,6 +58,7 @@ variable "rds_config" {
       service                         = string
       enabled_cloudwatch_logs_exports = list(string)
       copy_tags_to_snapshot           = bool
+      enable_http_endpoint            = bool
       cluster_parameter = object({
         family      = string
         description = string
@@ -113,6 +114,8 @@ variable "rds_config" {
     - cluster_config.service: (string) Service name.
     - cluster_config.enabled_cloudwatch_logs_exports: (list(string)) Set of log types to export to cloudwatch. If omitted, no logs will be exported. The following log types are supported: audit, error, general, slowquery, postgresql (PostgreSQL).
     - cluster_config.copy_tags_to_snapshot: (bool) Copy all Cluster tags to snapshots. Default is false.
+    - cluster_config.enable_http_endpoint: (bool) Enable HTTP endpoint (data API). Only valid when engine_mode is set to serverless. Default: false
+    - cluster_config.cluster_parameter.family: (string) The family of the DB cluster parameter group.
     - cluster_parameter.family: (string) The family of the DB cluster parameter group. 
     - instance_parameter.family: (string) The family of the DB parameter group. 
     - cluster_instances.instance_class: (string) Instance class to use. For details on CPU and memory, see Scaling Aurora DB Instances. Aurora uses db.* instance classes/types. Please see AWS Documentation for currently available instance classes and complete details. For Aurora Serverless v2 use db.serverless.

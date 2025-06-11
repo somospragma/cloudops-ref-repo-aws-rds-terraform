@@ -48,6 +48,7 @@ module "rds-aurora" {
           service                         = var.service               
           enabled_cloudwatch_logs_exports = var.enabled_cloudwatch_logs_exports                    
           copy_tags_to_snapshot           = var.copy_tags_to_snapshot
+          enable_http_endpoint            = var.enable_http_endpoint
           cluster_parameter = {
             family      = var.family                                  
             description = "Aurora PostgreSQL 16.6 default cluster parameters"

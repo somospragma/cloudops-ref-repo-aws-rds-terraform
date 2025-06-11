@@ -52,6 +52,9 @@ resource "aws_rds_cluster" "principal_cluster" {
       "enabled_cloudwatch_logs_exports" : rds.enabled_cloudwatch_logs_exports
       "port" : rds.port
       "copy_tags_to_snapshot" : rds.copy_tags_to_snapshot
+      "enable_http_endpoint" : rds.enable_http_endpoint
+      "iam_database_authentication_enabled" : rds.iam_database_authentication_enabled
+      "cluster_scaling_configuration" : rds.cluster_scaling_configuration
       "cluster_parameter" : rds.cluster_parameter
       "serverless_deploy" : cluster.serverless_deploy
       "max_capacity" : rds.cluster_scaling_configuration.max_capacity
@@ -82,6 +85,7 @@ resource "aws_rds_cluster" "principal_cluster" {
   db_cluster_parameter_group_name = try(aws_rds_cluster_parameter_group.principal_parameter["${each.value.cluster_application}-${each.value.region}-${each.value.rds_index}"].name, null)
   deletion_protection             = each.value["deletion_protection"]
   copy_tags_to_snapshot           = each.value["copy_tags_to_snapshot"]
+  enable_http_endpoint            = each.value["enable_http_endpoint"]
   enabled_cloudwatch_logs_exports = each.value["enabled_cloudwatch_logs_exports"]
   tags                            = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "cluster", each.key, var.service]))}" })
   
@@ -131,6 +135,7 @@ resource "aws_rds_cluster" "secondary_cluster" {
       "enabled_cloudwatch_logs_exports" : rds.enabled_cloudwatch_logs_exports
       "port" : rds.port
       "copy_tags_to_snapshot" : rds.copy_tags_to_snapshot
+      "enable_http_endpoint" : rds.enable_http_endpoint
       "cluster_parameter" : rds.cluster_parameter
       "service" : rds.service
       "serverless_deploy" : cluster.serverless_deploy
@@ -157,6 +162,7 @@ resource "aws_rds_cluster" "secondary_cluster" {
   db_cluster_parameter_group_name = try(aws_rds_cluster_parameter_group.secondary_parameter["${each.value.service}-${each.value.region}-${each.value.rds_index}"].name, null)
   deletion_protection             = each.value["deletion_protection"]
   copy_tags_to_snapshot           = each.value["copy_tags_to_snapshot"]
+  enable_http_endpoint            = each.value["enable_http_endpoint"]
   enabled_cloudwatch_logs_exports = each.value["enabled_cloudwatch_logs_exports"]
   tags                            = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "cluster", each.key, var.service]))}" })
   

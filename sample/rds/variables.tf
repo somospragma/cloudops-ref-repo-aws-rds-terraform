@@ -147,6 +147,11 @@ variable "copy_tags_to_snapshot" {
   description = "Copy all Cluster tags to snapshots. Default is false."
 }
 
+variable "enable_http_endpoint" {
+  type = bool
+  description = "Enable data API for Aurora Serverless. Default is false."  
+}
+
 variable "family" {
   type = string
   description = "The family of the DB cluster parameter group."

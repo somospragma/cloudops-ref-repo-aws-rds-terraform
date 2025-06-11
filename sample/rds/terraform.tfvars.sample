@@ -48,6 +48,7 @@ port                                      = "3306"
 service                                   = "default"                         
 enabled_cloudwatch_logs_exports           = ["postgresql","iam-db-auth-error"]                                
 copy_tags_to_snapshot                     = true                              # Copy tags to snapshots
+enable_http_endpoint                      = true
 family                                    = "aurora-postgresql16"                       
 
 # Type of instance, for example db.t3.medium. 
