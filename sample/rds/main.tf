@@ -70,7 +70,8 @@ module "rds-aurora" {
               publicly_accessible                   = var.publicly_accessible                
               auto_minor_version_upgrade            = var.auto_minor_version_upgrade                 
               performance_insights_enabled          = var.performance_insights_enabled                
-              performance_insights_retention_period = var.performance_insights_retention_period                   
+              performance_insights_retention_period = var.performance_insights_retention_period
+              performance_insights_kms_key_id       = var.performance_insights_kms_key_id                   
               monitoring_interval                   = var.monitoring_interval
               monitoring_role_arn                   = var.monitoring_role_arn                    
             }

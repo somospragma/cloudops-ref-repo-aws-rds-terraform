@@ -88,6 +88,7 @@ variable "rds_config" {
         auto_minor_version_upgrade            = bool
         performance_insights_enabled          = bool
         performance_insights_retention_period = number
+        performance_insights_kms_key_id       = string
         monitoring_interval                   = number
         monitoring_role_arn                   = string
       }))
@@ -123,6 +124,7 @@ variable "rds_config" {
     - cluster_instances.auto_minor_version_upgrade: (bool) Indicates that minor engine upgrades will be applied automatically to the DB instance during the maintenance window. Default true.
     - cluster_instances.performance_insights_enabled: (bool) Specifies whether Performance Insights is enabled or not. NOTE: When Performance Insights is configured at the cluster level through aws_rds_cluster, this argument cannot be set to a value that conflicts with the cluster's configuration.
     - cluster_instances.performance_insights_retention_period: (number) Specifies the amount of time to retain performance insights data for. Defaults to 7 days if Performance Insights are enabled. Valid values are 7, month * 31 (where month is a number of months from 1-23), and 731.
+    - cluster_instances.performance_insights_kms_key_id: (string) Amazon Resource Name (ARN) of the KMS key to encrypt Performance Insights data. When specifying performance_insights_kms_key_id, performance_insights_enabled needs to be set to true.
     - cluster_instances.monitoring_interval: (number) Interval, in seconds, between points when Enhanced Monitoring metrics are collected for the DB instance. To disable collecting Enhanced Monitoring metrics, specify 0. The default is 0. Valid Values: 0, 1, 5, 10, 15, 30, 60.
   EOF
 }

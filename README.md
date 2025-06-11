@@ -147,7 +147,8 @@ module "rds-aurora" {
               publicly_accessible                   = "xxxxxx"                
               auto_minor_version_upgrade            = "xxxxxx"                 
               performance_insights_enabled          = "xxxxxx"                
-              performance_insights_retention_period = "xxxxxx"                   
+              performance_insights_retention_period = "xxxxxx"
+              performance_insights_kms_key_id       = "xxxxxx"                   
               monitoring_interval                   = "xxxxxx"
               monitoring_role_arn                   = "xxxxxx"                    
             }
@@ -277,6 +278,7 @@ Variables dentro del objeto rds_config
 | <a name="auto_minor_version_upgrade"></a> [auto_minor_version_upgrade](#input\_auto_minor_version_upgrade_) | Indica que se aplican las actualizaciones menores del motor de base de datos automáticamente durante la ventana de mantenimiento. Default true. | `bool` | n/a | yes |
 | <a name="performance_insights_enabled"></a> [performance_insights_enabled](#input\_performance_insights_enabled_) | Indica si se habilita Performance Insights. | `bool` | n/a | yes |
 | <a name="performance_insights_retention_period"></a> [performance_insights_retention_period](#input\_performance_insights_retention_period_) | Indica el período de retención de los datos de Performance Insights. Defaults 7 días. Valores válidos 7, mes * 31 (donde mes es un número entre 1-23) y 731. | `number` | n/a | yes |
+| <a name="performance_insights_kms_key_id"></a> [performance_insights_kms_key_id](#input\_performance_insights_kms_key_id_) | Llave KMS para activar performance insights | `string` | n/a | no |
 | <a name="monitoring_interval"></a> [monitoring_interval](#input\_monitoring_interval_) | Intervalo, en segundos, donde recolectan las métricas de Enhanced Monitoring para la instancia. Para deshabilitar esta opción configurar el valor 0. Default 0. Valores válidos: 0, 1, 5, 10, 15, 30, 60. | `number` | n/a | yes |
 | <a name="monitoring_role_arn"></a> [monitoring_role_arn](#input\_monitoring_role_arn_) | ARN del rol requerido para habilitar Enhance Monitoring | `number` | n/a | yes |
 | <a name="max_capacity"></a> [max_capacity](#input\_max_capacity_) | Número máximo de unidades de capacidad (ACUs) de la instancia en el cluster de Aurora Serverless V2. Valores válidos: Aurora MySQL (1, 2, 4, 8, 16, 32, 64, 128, 256). Aurora PostgreSQL (2, 4, 8, 16, 32, 64, 192, and 384). | `string` | n/a | yes |
@@ -354,6 +356,7 @@ variable "rds_config" {
         auto_minor_version_upgrade            = bool         # Aplicar actualizaciones de versiones menores automáticamente
         performance_insights_enabled          = bool         # Activar Performance Insights
         performance_insights_retention_period = number       # Período de retención de las métricas en Performance Insights
+        performance_insights_kms_key_id       = string       # Llave KMS para activar performance insights
         monitoring_interval                   = number       # Permite habilitar el Enhance Monitoring. 
         monitoring_role_arn                   = string       # ARN del rol requerido para habilitar Enhance Monitoring
       }))
@@ -426,7 +429,8 @@ rds_config = [
               publicly_accessible                   = false               
               auto_minor_version_upgrade            = true                 
               performance_insights_enabled          = false               
-              performance_insights_retention_period = 7                   
+              performance_insights_retention_period = 7 
+              performance_insights_kms_key_id       = "arn:aws:kms:us-east-1:008971642453:key/2a9dd3ab-d630-487a-b8ce-65c13dbf180f"                  
               monitoring_interval                   = 0
               monitoring_role_arn                   = ""                    
             }
@@ -492,7 +496,8 @@ rds_config = [
               publicly_accessible                   = false               
               auto_minor_version_upgrade            = true                 
               performance_insights_enabled          = false               
-              performance_insights_retention_period = 7                   
+              performance_insights_retention_period = 7
+              performance_insights_kms_key_id       = "arn:aws:kms:us-east-1:008971642453:key/2a9dd3ab-d630-487a-b8ce-65c13dbf180f"                   
               monitoring_interval                   = 0
               monitoring_role_arn                   = ""                    
             }
@@ -634,7 +639,8 @@ rds_config = [
               publicly_accessible                   = false               
               auto_minor_version_upgrade            = true                 
               performance_insights_enabled          = false               
-              performance_insights_retention_period = 7                   
+              performance_insights_retention_period = 7
+              performance_insights_kms_key_id       = "arn:aws:kms:us-east-1:008971642453:key/2a9dd3ab-d630-487a-b8ce-65c13dbf180f"                   
               monitoring_interval                   = 0
               monitoring_role_arn                   = ""                    
             }
@@ -700,7 +706,8 @@ rds_config = [
               publicly_accessible                   = false               
               auto_minor_version_upgrade            = true                 
               performance_insights_enabled          = false               
-              performance_insights_retention_period = 7                   
+              performance_insights_retention_period = 7 
+              performance_insights_kms_key_id       = "arn:aws:kms:us-east-1:008971642453:key/2a9dd3ab-d630-487a-b8ce-65c13dbf180f"                  
               monitoring_interval                   = 0
               monitoring_role_arn                   = ""                    
             }
@@ -744,7 +751,8 @@ rds_config = [
               publicly_accessible                   = false               
               auto_minor_version_upgrade            = true                 
               performance_insights_enabled          = false               
-              performance_insights_retention_period = 7                   
+              performance_insights_retention_period = 7
+              performance_insights_kms_key_id       = "arn:aws:kms:us-east-1:008971642453:key/11842d1a-81ff-4ee2-9598-94ac02d0615f"                   
               monitoring_interval                   = 0
               monitoring_role_arn                   = ""                    
             }

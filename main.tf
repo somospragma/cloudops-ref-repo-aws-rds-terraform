@@ -194,6 +194,7 @@ resource "aws_rds_cluster_instance" "principal_cluster_instances" {
       "auto_minor_version_upgrade" : instance.auto_minor_version_upgrade
       "performance_insights_enabled" : instance.performance_insights_enabled
       "performance_insights_retention_period" : instance.performance_insights_retention_period
+      "performance_insights_kms_key_id" : instance.performance_insights_kms_key_id
       "monitoring_interval" : instance.monitoring_interval
       "monitoring_role_arn" : instance.monitoring_role_arn
     }]]]) : "${item.cluster_application}-instance-${item.instance_index}" => item if item.principal
@@ -207,7 +208,7 @@ resource "aws_rds_cluster_instance" "principal_cluster_instances" {
   publicly_accessible                   = each.value["publicly_accessible"]
   auto_minor_version_upgrade            = each.value["auto_minor_version_upgrade"]
   performance_insights_enabled          = each.value["performance_insights_enabled"]
-  performance_insights_kms_key_id       = each.value["performance_insights_enabled"] ? each.value["kms_key_id"] : null
+  performance_insights_kms_key_id       = each.value["performance_insights_enabled"] ? each.value["performance_insights_kms_key_id"] : null
   performance_insights_retention_period = each.value["performance_insights_retention_period"]
   db_parameter_group_name               = try(aws_db_parameter_group.principal_parameter["${each.value.cluster_application}-${each.value.region}-${each.value.rds_index}"].name, null)
   monitoring_interval                   = each.value["monitoring_interval"]
@@ -236,6 +237,7 @@ resource "aws_rds_cluster_instance" "secondary_cluster_instances" {
       "auto_minor_version_upgrade" : instance.auto_minor_version_upgrade
       "performance_insights_enabled" : instance.performance_insights_enabled
       "performance_insights_retention_period" : instance.performance_insights_retention_period
+      "performance_insights_kms_key_id" : instance.performance_insights_kms_key_id
       "monitoring_interval" : instance.monitoring_interval
       "monitoring_role_arn" : instance.monitoring_role_arn
     }]]]) : "${item.service}-instance-${item.instance_index}" => item if !item.principal
@@ -249,7 +251,7 @@ resource "aws_rds_cluster_instance" "secondary_cluster_instances" {
   publicly_accessible                   = each.value["publicly_accessible"]
   auto_minor_version_upgrade            = each.value["auto_minor_version_upgrade"]
   performance_insights_enabled          = each.value["performance_insights_enabled"]
-  performance_insights_kms_key_id       = each.value["performance_insights_enabled"] ? each.value["kms_key_id"] : null
+  performance_insights_kms_key_id       = each.value["performance_insights_enabled"] ? each.value["performance_insights_kms_key_id"] : null
   performance_insights_retention_period = each.value["performance_insights_retention_period"]
   db_parameter_group_name               = try(aws_db_parameter_group.secondary_parameter["${each.value.service}-${each.value.region}-${each.value.rds_index}"].name, null)
   monitoring_interval                   = each.value["monitoring_interval"]

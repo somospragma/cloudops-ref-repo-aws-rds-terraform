@@ -63,6 +63,7 @@ publicly_accessible                       = false                             # 
 auto_minor_version_upgrade                = true                              # Automatic updates
 performance_insights_enabled              = true                              # Disable Performance Insights
 performance_insights_retention_period     = 7                                 # Keep 7 days of performance data
+performance_insights_kms_key_id           = "arn:aws:kms:us-east-1:008971642453:key/2a9dd3ab-d630-487a-b8ce-65c13dbf180f"
 monitoring_interval                       = 30   
 monitoring_role_arn                       = "arn:aws:iam::008971642453:role/rds-monitoring-role"
 

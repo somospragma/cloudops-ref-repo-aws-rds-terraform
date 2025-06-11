@@ -183,6 +183,12 @@ variable "performance_insights_retention_period" {
   description = "Specifies the amount of time to retain performance insights data for. Defaults to 7 days if Performance Insights are enabled. Valid values are 7, month * 31 (where month is a number of months from 1-23), and 731."
 }
 
+variable "performance_insights_kms_key_id" {
+  type    = string
+  default = null
+  description = "Amazon Resource Name (ARN) of the KMS key to encrypt Performance Insights data. When specifying performance_insights_kms_key_id, performance_insights_enabled needs to be set to true."
+}
+
 variable "monitoring_interval" {
   type = number
   description = "Interval, in seconds, between points when Enhanced Monitoring metrics are collected for the DB instance. To disable collecting Enhanced Monitoring metrics, specify 0. The default is 0. Valid Values: 0, 1, 5, 10, 15, 30, 60."
