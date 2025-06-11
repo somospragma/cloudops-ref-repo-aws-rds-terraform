@@ -53,8 +53,6 @@ resource "aws_rds_cluster" "principal_cluster" {
       "port" : rds.port
       "copy_tags_to_snapshot" : rds.copy_tags_to_snapshot
       "enable_http_endpoint" : rds.enable_http_endpoint
-      "iam_database_authentication_enabled" : rds.iam_database_authentication_enabled
-      "cluster_scaling_configuration" : rds.cluster_scaling_configuration
       "cluster_parameter" : rds.cluster_parameter
       "serverless_deploy" : cluster.serverless_deploy
       "max_capacity" : rds.cluster_scaling_configuration.max_capacity
