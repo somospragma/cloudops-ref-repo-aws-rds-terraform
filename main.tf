@@ -10,7 +10,7 @@ resource "aws_rds_global_cluster" "global_db" {
     } if cluster.create_global_cluster
   }
   provider                  = aws.principal
-  global_cluster_identifier = join("-", tolist([var.client, var.project,var.environment, each.key, "glb", var.service]))
+  global_cluster_identifier = join("-", tolist([var.client, var.project, var.environment, each.key, "glb", var.service]))
   engine                    = each.value["engine"]
   engine_version            = each.value["engine_version"]
   database_name             = each.value["database_name"]
@@ -58,7 +58,7 @@ resource "aws_rds_cluster" "principal_cluster" {
       "max_capacity" : rds.cluster_scaling_configuration.max_capacity
       "min_capacity" : rds.cluster_scaling_configuration.min_capacity
       "seconds_until_auto_pause" : rds.cluster_scaling_configuration.seconds_until_auto_pause
-    }]]) : 
+    }]]) :
     "${item.cluster_application}-${item.region}-${idx}" => item if item.principal
   }
 
@@ -86,17 +86,17 @@ resource "aws_rds_cluster" "principal_cluster" {
   enable_http_endpoint            = each.value["enable_http_endpoint"]
   enabled_cloudwatch_logs_exports = each.value["enabled_cloudwatch_logs_exports"]
   tags                            = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "cluster", each.key, var.service]))}" })
-  
+
   dynamic "serverlessv2_scaling_configuration" {
     for_each = each.value["serverless_deploy"] ? [1] : []
     content {
-      max_capacity             = each.value["max_capacity"] 
+      max_capacity             = each.value["max_capacity"]
       min_capacity             = each.value["min_capacity"]
       seconds_until_auto_pause = each.value["seconds_until_auto_pause"]
     }
   }
-  
-  depends_on = [ aws_rds_cluster_parameter_group.principal_parameter ]
+
+  depends_on = [aws_rds_cluster_parameter_group.principal_parameter]
 }
 
 resource "aws_rds_cluster" "secondary_cluster" {
@@ -142,7 +142,7 @@ resource "aws_rds_cluster" "secondary_cluster" {
       "seconds_until_auto_pause" : rds.cluster_scaling_configuration.seconds_until_auto_pause
     }]]) : "${item.service}-${item.region}-${item.rds_index}" => item if !item.principal
   }
-  
+
   provider                        = aws.secondary
   global_cluster_identifier       = each.value["create_global_cluster"] ? aws_rds_global_cluster.global_db[each.value["cluster_application"]].id : null
   engine                          = each.value["engine"]
@@ -163,17 +163,17 @@ resource "aws_rds_cluster" "secondary_cluster" {
   enable_http_endpoint            = each.value["enable_http_endpoint"]
   enabled_cloudwatch_logs_exports = each.value["enabled_cloudwatch_logs_exports"]
   tags                            = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "cluster", each.key, var.service]))}" })
-  
+
   dynamic "serverlessv2_scaling_configuration" {
     for_each = each.value["serverless_deploy"] ? [1] : []
     content {
-      max_capacity             = each.value["max_capacity"] 
+      max_capacity             = each.value["max_capacity"]
       min_capacity             = each.value["min_capacity"]
       seconds_until_auto_pause = each.value["seconds_until_auto_pause"]
     }
   }
-  
-  depends_on = [ aws_rds_cluster_parameter_group.secondary_parameter, aws_rds_cluster_instance.principal_cluster_instances ]
+
+  depends_on = [aws_rds_cluster_parameter_group.secondary_parameter, aws_rds_cluster_instance.principal_cluster_instances]
 }
 
 resource "aws_rds_cluster_instance" "principal_cluster_instances" {
@@ -194,13 +194,13 @@ resource "aws_rds_cluster_instance" "principal_cluster_instances" {
       "auto_minor_version_upgrade" : instance.auto_minor_version_upgrade
       "performance_insights_enabled" : instance.performance_insights_enabled
       "performance_insights_retention_period" : instance.performance_insights_retention_period
-      "performance_insights_kms_key_id" : instance.performance_insights_kms_key_id
+      "performance_insights_kms_key_id" : rds.performance_insights_kms_key_id
       "monitoring_interval" : instance.monitoring_interval
       "monitoring_role_arn" : instance.monitoring_role_arn
     }]]]) : "${item.cluster_application}-instance-${item.instance_index}" => item if item.principal
   }
   provider                              = aws.principal
-  identifier                            = join("-", tolist([var.client, var.project, var.environment, "rds-instance", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))
+  identifier                            = join("-", tolist([var.client, var.project, var.environment, "rds-instance", each.value["cluster_application"], var.service, each.value["instance_index"] + 1]))
   cluster_identifier                    = aws_rds_cluster.principal_cluster["${each.value.cluster_application}-${each.value.region}-${each.value.rds_index}"].id
   instance_class                        = each.value["instance_class"]
   engine                                = aws_rds_cluster.principal_cluster["${each.value.cluster_application}-${each.value.region}-${each.value.rds_index}"].engine
@@ -208,14 +208,14 @@ resource "aws_rds_cluster_instance" "principal_cluster_instances" {
   publicly_accessible                   = each.value["publicly_accessible"]
   auto_minor_version_upgrade            = each.value["auto_minor_version_upgrade"]
   performance_insights_enabled          = each.value["performance_insights_enabled"]
-  performance_insights_kms_key_id       = each.value["performance_insights_enabled"] ? each.value["performance_insights_kms_key_id"] : null
+  performance_insights_kms_key_id       = each.value["performance_insights_kms_key_id"]
   performance_insights_retention_period = each.value["performance_insights_retention_period"]
   db_parameter_group_name               = try(aws_db_parameter_group.principal_parameter["${each.value.cluster_application}-${each.value.region}-${each.value.rds_index}"].name, null)
   monitoring_interval                   = each.value["monitoring_interval"]
   monitoring_role_arn                   = each.value["monitoring_role_arn"]
-  tags                                  = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "rds-instance", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))}" })
+  tags                                  = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "rds-instance", each.value["cluster_application"], var.service, each.value["instance_index"] + 1]))}" })
 
-  depends_on = [ aws_db_parameter_group.principal_parameter ]
+  depends_on = [aws_db_parameter_group.principal_parameter]
 }
 
 resource "aws_rds_cluster_instance" "secondary_cluster_instances" {
@@ -237,13 +237,13 @@ resource "aws_rds_cluster_instance" "secondary_cluster_instances" {
       "auto_minor_version_upgrade" : instance.auto_minor_version_upgrade
       "performance_insights_enabled" : instance.performance_insights_enabled
       "performance_insights_retention_period" : instance.performance_insights_retention_period
-      "performance_insights_kms_key_id" : instance.performance_insights_kms_key_id
+      "performance_insights_kms_key_id" : rds.performance_insights_kms_key_id
       "monitoring_interval" : instance.monitoring_interval
       "monitoring_role_arn" : instance.monitoring_role_arn
     }]]]) : "${item.service}-instance-${item.instance_index}" => item if !item.principal
   }
   provider                              = aws.secondary
-  identifier                            = join("-", tolist([var.client, var.project, var.environment, "rds-instance", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))
+  identifier                            = join("-", tolist([var.client, var.project, var.environment, "rds-instance", each.value["cluster_application"], var.service, each.value["instance_index"] + 1]))
   cluster_identifier                    = aws_rds_cluster.secondary_cluster["${each.value.service}-${each.value.region}-${each.value.rds_index}"].id
   instance_class                        = each.value["instance_class"]
   engine                                = aws_rds_cluster.secondary_cluster["${each.value.service}-${each.value.region}-${each.value.rds_index}"].engine
@@ -251,14 +251,14 @@ resource "aws_rds_cluster_instance" "secondary_cluster_instances" {
   publicly_accessible                   = each.value["publicly_accessible"]
   auto_minor_version_upgrade            = each.value["auto_minor_version_upgrade"]
   performance_insights_enabled          = each.value["performance_insights_enabled"]
-  performance_insights_kms_key_id       = each.value["performance_insights_enabled"] ? each.value["performance_insights_kms_key_id"] : null
+  performance_insights_kms_key_id       = each.value["performance_insights_kms_key_id"]
   performance_insights_retention_period = each.value["performance_insights_retention_period"]
   db_parameter_group_name               = try(aws_db_parameter_group.secondary_parameter["${each.value.service}-${each.value.region}-${each.value.rds_index}"].name, null)
   monitoring_interval                   = each.value["monitoring_interval"]
   monitoring_role_arn                   = each.value["monitoring_role_arn"]
-  tags                                  = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "rds-instance", each.value["cluster_application"] , var.service, each.value["instance_index"] + 1]))}" })
+  tags                                  = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "rds-instance", each.value["cluster_application"], var.service, each.value["instance_index"] + 1]))}" })
 
-  depends_on = [ aws_db_parameter_group.secondary_parameter,  aws_rds_cluster_instance.principal_cluster_instances ]
+  depends_on = [aws_db_parameter_group.secondary_parameter, aws_rds_cluster_instance.principal_cluster_instances]
 }
 
 resource "aws_db_subnet_group" "principal_subnet_group" {
@@ -269,20 +269,20 @@ resource "aws_db_subnet_group" "principal_subnet_group" {
       "principal" : rds.principal
       "region" : rds.region
       "subnet_ids" : rds.subnet_ids
-    }]]) : 
+    }]]) :
     "${item.cluster_application}-${item.region}-${idx}" => item if item.principal
   }
 
   provider   = aws.principal
   name       = join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.key, var.service]))
   subnet_ids = each.value["subnet_ids"]
-  tags       = merge({
+  tags = merge({
     Name = join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.key, var.service]))
   })
 }
 
 resource "aws_db_subnet_group" "secondary_subnet_group" {
-  provider   = aws.secondary
+  provider = aws.secondary
   for_each = {
     for item in flatten([for cluster in var.rds_config : [for rds in cluster.cluster_config : {
       "cluster_application" : cluster.cluster_application
@@ -294,7 +294,7 @@ resource "aws_db_subnet_group" "secondary_subnet_group" {
 
     }]]) : "${item.service}-${item.region}-${item.rds_index}" => item if !item.principal
   }
-  
+
   name       = join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.key, var.service]))
   subnet_ids = each.value["subnet_ids"]
   tags       = merge({ Name = "${join("-", tolist([var.client, var.project, var.environment, "sn-grp", each.key, var.service]))}" })
@@ -314,9 +314,9 @@ resource "aws_db_parameter_group" "principal_parameter" {
     } if length(rds.instance_parameter.parameters) > 0 && rds.principal]]) :
     "${item.cluster_application}-${item.region}-${item.rds_index}" => item
   }
-  provider   = aws.principal
-  name   = join("-", tolist([var.client, var.project, var.environment, "instance-parameter", each.key,  var.service]))
-  family = each.value["family"]
+  provider = aws.principal
+  name     = join("-", tolist([var.client, var.project, var.environment, "instance-parameter", each.key, var.service]))
+  family   = each.value["family"]
 
   dynamic "parameter" {
     for_each = each.value["parameters"]
@@ -344,12 +344,12 @@ resource "aws_db_parameter_group" "secondary_parameter" {
       "parameters" : rds.instance_parameter.parameters
       "service" : rds.service
 
-   } if length(rds.instance_parameter.parameters) > 0 && !rds.principal]]) :
+    } if length(rds.instance_parameter.parameters) > 0 && !rds.principal]]) :
     "${item.service}-${item.region}-${item.rds_index}" => item
   }
-  provider   = aws.secondary
-  name   = join("-", tolist([var.client, var.project, var.environment, "instance-parameter", each.key,  var.service]))
-  family = each.value["family"]
+  provider = aws.secondary
+  name     = join("-", tolist([var.client, var.project, var.environment, "instance-parameter", each.key, var.service]))
+  family   = each.value["family"]
 
   dynamic "parameter" {
     for_each = each.value["parameters"]
@@ -380,8 +380,8 @@ resource "aws_rds_cluster_parameter_group" "principal_parameter" {
     "${item.cluster_application}-${item.region}-${item.rds_index}" => item
     if length(item.parameters) > 0 && item.principal
   }
-  provider   = aws.principal
-  name        = join("-", tolist([var.client, var.project, var.environment, "cluster-parameter", each.key ,  var.service]))
+  provider    = aws.principal
+  name        = join("-", tolist([var.client, var.project, var.environment, "cluster-parameter", each.key, var.service]))
   family      = each.value["family"]
   description = each.value["description"]
 
@@ -410,8 +410,8 @@ resource "aws_rds_cluster_parameter_group" "secondary_parameter" {
     "${item.service}-${item.region}-${item.rds_index}" => item
     if length(item.parameters) > 0 && !item.principal
   }
-  provider   = aws.secondary
-  name        = join("-", tolist([var.client, var.project, var.environment, "cluster-parameter", each.key ,  var.service]))
+  provider    = aws.secondary
+  name        = join("-", tolist([var.client, var.project, var.environment, "cluster-parameter", each.key, var.service]))
   family      = each.value["family"]
   description = each.value["description"]
 
