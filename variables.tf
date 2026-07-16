@@ -1,65 +1,101 @@
-###########################################
-########## Common variables ###############
-###########################################
+# PC-IAC-002: Variables con type, description y validation obligatorios
+# PC-IAC-002/PC-IAC-010: map(object) en lugar de list(object) para estabilidad en for_each
 
+##############################################################
+# Variables Globales de Gobernanza
+##############################################################
 variable "environment" {
   type        = string
-  description = "Environment where resources will be deployed"
+  description = "Entorno de despliegue (dev, qa, pdn)"
+  validation {
+    condition     = contains(["dev", "qa", "pdn", "staging", "prod"], var.environment)
+    error_message = "El entorno debe ser uno de: dev, qa, pdn, staging, prod."
+  }
 }
 
 variable "client" {
   type        = string
-  description = "Client name"
+  description = "Nombre del cliente — usado en la nomenclatura {client}-{project}-{environment}-..."
+  validation {
+    condition     = length(var.client) > 0 && length(var.client) <= 10
+    error_message = "El nombre del cliente debe tener entre 1 y 10 caracteres."
+  }
 }
 
 variable "project" {
   type        = string
-  description = "Project name"
+  description = "Nombre del proyecto — usado en la nomenclatura"
+  validation {
+    condition     = length(var.project) > 0 && length(var.project) <= 15
+    error_message = "El nombre del proyecto debe tener entre 1 y 15 caracteres."
+  }
 }
 
 variable "service" {
   type        = string
-  description = "Service name"
+  description = "Nombre del servicio — sufijo en la nomenclatura (ej: db, backend, analytics)"
+  validation {
+    condition     = length(var.service) > 0
+    error_message = "El nombre del servicio no puede estar vacío."
+  }
 }
 
 variable "master_password" {
   type        = string
-  description = "Master password"
+  description = "Contraseña maestra del cluster. Solo requerida si manage_master_user_password=false. Usar Secrets Manager cuando sea posible."
+  sensitive   = true
+  default     = ""
 }
 
-###########################################
-############# RDS variables ###############
-###########################################
-
+##############################################################
+# Variables RDS
+# PC-IAC-002: map(object) para estabilidad en for_each
+# PC-IAC-010: cluster_scaling_configuration optional — solo requerido cuando serverless_deploy=true
+##############################################################
 variable "rds_config" {
-  type = list(object({
+  type = map(object({
+    # ---- Configuración del cluster (nivel global) ----
     create_global_cluster = bool
-    cluster_application   = string
     engine                = string
     engine_version        = string
     database_name         = string
     deletion_protection   = bool
-    storage_encrypted     = bool
-    serverless_deploy     = bool
+    storage_encrypted     = optional(bool, true)
+    # true  → Aurora Serverless v2 (engine_mode=provisioned + db.serverless + serverlessv2_scaling_configuration)
+    # false → Instancia provisionada (ej: db.t3.medium, db.r6g.large, etc.)
+    serverless_deploy = optional(bool, false)
+
     cluster_config = list(object({
-      principal                       = bool
-      region                          = string
-      engine_mode                     = string
-      manage_master_user_password     = bool
-      master_password                 = optional(string)
-      master_username                 = string
-      vpc_security_group_ids          = list(string)
-      subnet_ids                      = list(string)
-      backup_retention_period         = number
-      skip_final_snapshot             = bool
-      preferred_backup_window         = string
-      kms_key_id                      = string
-      performance_insights_kms_key_id = string
+      principal   = bool
+      region      = string
+      engine_mode = string # "provisioned" para ambos modos (serverless v2 e instancia normal)
+
+      # ---- Autenticación ----
+      manage_master_user_password = optional(bool, true)
+      master_password             = optional(string, "")
+      master_username             = string
+
+      # ---- Red (inyectados por los locals del root) ----
+      vpc_security_group_ids = optional(list(string), [])
+      subnet_ids             = optional(list(string), [])
+
+      # ---- Backup y mantenimiento ----
+      backup_retention_period = number
+      skip_final_snapshot     = optional(bool, true)
+      preferred_backup_window = string
+
+      # ---- Cifrado ----
+      storage_encrypted = optional(bool, true)
+      kms_key_id        = optional(string, "")
+
+      # ---- Rendimiento ----
       port                            = string
       service                         = string
       enabled_cloudwatch_logs_exports = list(string)
-      copy_tags_to_snapshot           = bool
-      enable_http_endpoint            = bool
+      copy_tags_to_snapshot           = optional(bool, true)
+      enable_http_endpoint            = optional(bool, false)
+
+      # ---- Parámetros ----
       cluster_parameter = object({
         family      = string
         description = string
@@ -69,11 +105,15 @@ variable "rds_config" {
           apply_method = string
         }))
       })
-      cluster_scaling_configuration = object({
-        max_capacity             = string
-        min_capacity             = string
-        seconds_until_auto_pause = string
-      })
+
+      # PC-IAC-010: optional — solo se usa cuando serverless_deploy=true
+      # Para instancia provisionada (serverless_deploy=false) dejar en null o no declarar
+      cluster_scaling_configuration = optional(object({
+        max_capacity             = number
+        min_capacity             = number
+        seconds_until_auto_pause = optional(number, 3600)
+      }), null)
+
       instance_parameter = object({
         family = string
         parameters = list(object({
@@ -82,49 +122,60 @@ variable "rds_config" {
           apply_method = string
         }))
       })
+
       cluster_instances = list(object({
-        record_id                             = string
-        instance_class                        = string
-        publicly_accessible                   = bool
-        auto_minor_version_upgrade            = bool
-        performance_insights_enabled          = bool
-        performance_insights_retention_period = number
-        monitoring_interval                   = number
-        monitoring_role_arn                   = string
+        record_id              = optional(string, "instance-1")
+        instance_class         = string # "db.serverless" para SLv2, "db.t3.medium" etc para provisioned
+        publicly_accessible    = optional(bool, false)
+        auto_minor_version_upgrade = optional(bool, true)
+        # CORRECCIÓN: performance_insights solo disponible en ciertos instance_class
+        # db.t3.medium NO soporta PI — poner false en ese caso
+        performance_insights_enabled          = optional(bool, false)
+        performance_insights_retention_period = optional(number, 7)
+        # CORRECCIÓN: kms_key solo se pasa cuando performance_insights_enabled=true
+        performance_insights_kms_key_id = optional(string, "")
+        monitoring_interval             = optional(number, 0)
+        monitoring_role_arn             = optional(string, "")
       }))
     }))
   }))
   description = <<EOF
-    - create_global_cluster: (string) If true, a global cluster will be created.
-    - cluster_application: (string) Cluster application name.
-    - engine: (string) Name of the database engine to be used for this DB cluster. Valid Values: aurora-mysql, aurora-postgresql, mysql, postgres. (Note that mysql and postgres are Multi-AZ RDS clusters).
-    - engine_version: (string) Database engine version.
-    - database_name: (string) Data base name.
-    - deletion_protection: (bool) If the DB cluster should have deletion protection enabled. The database can't be deleted when this value is set to true. The default is false.
-    - cluster_config.principal: (bool) If true, it'll be deploy only one node.
-    - cluster_config.engine_mode: (string) Database engine mode. Valid values: global (only valid for Aurora MySQL 1.21 and earlier), parallelquery, provisioned, serverless. Defaults to: provisioned. See the RDS User Guide for limitations when using serverless.
-    - cluster_config.manage_master_user_password: (bool) Set to true to allow RDS to manage the master user password in Secrets Manager. Cannot be set if master_password is provided.
-    - cluster_config.master_password: (optional, string) (Required unless manage_master_user_password is set to true or unless a snapshot_identifier or replication_source_identifier is provided or unless a global_cluster_identifier is provided when the cluster is the "secondary" cluster of a global database) Password for the master DB user. Note that this may show up in logs, and it will be stored in the state file. Please refer to the RDS Naming Constraints. Cannot be set if manage_master_user_password is set to true.
-    - cluster_config.master_username: (string) Master username for the database
-    - cluster_config.backup_retention_period: (number) Days to retain backups for. Default 1.
-    - cluster_config.skip_final_snapshot: (bool) Determines whether a final DB snapshot is created before the DB cluster is deleted. If true is specified, no DB snapshot is created. If false is specified, a DB snapshot is created before the DB cluster is deleted, using the value from final_snapshot_identifier. Default is false.
-    - cluster_config.preferred_backup_window: (string) Daily time range during which the backups happen
-    - cluster_config.storage_encrypted: (bool) Specifies whether the DB cluster is encrypted.
-    - cluster_config.kms_key_id: (string) Amazon Web Services KMS key identifier that is used to encrypt the secret.
-    - cluster_config.performance_insights_kms_key_id: (string) Amazon Resource Name (ARN) of the KMS key to encrypt Performance Insights data. When specifying performance_insights_kms_key_id, performance_insights_enabled needs to be set to true.
-    - cluster_config.port: (string) Database port.
-    - cluster_config.service: (string) Service name.
-    - cluster_config.enabled_cloudwatch_logs_exports: (list(string)) Set of log types to export to cloudwatch. If omitted, no logs will be exported. The following log types are supported: audit, error, general, slowquery, postgresql (PostgreSQL).
-    - cluster_config.copy_tags_to_snapshot: (bool) Copy all Cluster tags to snapshots. Default is false.
-    - cluster_config.enable_http_endpoint: (bool) Enable HTTP endpoint (data API). Only valid when engine_mode is set to serverless. Default: false
-    - cluster_config.cluster_parameter.family: (string) The family of the DB cluster parameter group.
-    - cluster_parameter.family: (string) The family of the DB cluster parameter group. 
-    - instance_parameter.family: (string) The family of the DB parameter group. 
-    - cluster_instances.instance_class: (string) Instance class to use. For details on CPU and memory, see Scaling Aurora DB Instances. Aurora uses db.* instance classes/types. Please see AWS Documentation for currently available instance classes and complete details. For Aurora Serverless v2 use db.serverless.
-    - cluster_instances.publicly_accessible: (bool) Bool to control if instance is publicly accessible. Default false. See the documentation on Creating DB Instances for more details on controlling this property.
-    - cluster_instances.auto_minor_version_upgrade: (bool) Indicates that minor engine upgrades will be applied automatically to the DB instance during the maintenance window. Default true.
-    - cluster_instances.performance_insights_enabled: (bool) Specifies whether Performance Insights is enabled or not. NOTE: When Performance Insights is configured at the cluster level through aws_rds_cluster, this argument cannot be set to a value that conflicts with the cluster's configuration.
-    - cluster_instances.performance_insights_retention_period: (number) Specifies the amount of time to retain performance insights data for. Defaults to 7 days if Performance Insights are enabled. Valid values are 7, month * 31 (where month is a number of months from 1-23), and 731.
-    - cluster_instances.monitoring_interval: (number) Interval, in seconds, between points when Enhanced Monitoring metrics are collected for the DB instance. To disable collecting Enhanced Monitoring metrics, specify 0. The default is 0. Valid Values: 0, 1, 5, 10, 15, 30, 60.
-  EOF
+Mapa de configuración de clusters Aurora RDS. Usa map(object) para estabilidad en for_each (PC-IAC-002/010).
+
+MODOS DE DESPLIEGUE:
+  serverless_deploy = true  → Aurora Serverless v2
+    - engine_mode = "provisioned"
+    - instance_class = "db.serverless"
+    - cluster_scaling_configuration REQUERIDO (max_capacity, min_capacity)
+    - performance_insights_enabled = true (soportado en db.serverless)
+
+  serverless_deploy = false → Instancia provisionada
+    - engine_mode = "provisioned"
+    - instance_class = "db.t3.medium" / "db.r6g.large" / etc.
+    - cluster_scaling_configuration = null (ignorado)
+    - performance_insights_enabled = false para db.t3.micro/medium (no soportado)
+
+NOMENCLATURA: {client}-{project}-{environment}-cluster-{key}-{service}
+
+EJEMPLOS en sample/terraform.tfvars
+EOF
+  default = {}
+
+  validation {
+    condition = alltrue([
+      for k, v in var.rds_config : contains(["aurora-mysql", "aurora-postgresql"], v.engine)
+    ])
+    error_message = "El engine debe ser 'aurora-mysql' o 'aurora-postgresql'."
+  }
+
+  validation {
+    condition = alltrue([
+      for k, v in var.rds_config :
+      !v.serverless_deploy || alltrue([
+        for cc in v.cluster_config :
+        cc.cluster_scaling_configuration != null
+      ])
+    ])
+    error_message = "Cuando serverless_deploy=true, cluster_scaling_configuration es obligatorio en cada cluster_config."
+  }
 }
