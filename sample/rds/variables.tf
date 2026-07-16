@@ -1,223 +1,125 @@
-###########################################
-########## Common variables ###############
-###########################################
+# PC-IAC-002: Variables con type, description y validation
+# PC-IAC-026: Variables del sample reciben la config base sin IDs — locals.tf inyecta los dinámicos
 
+##############################################################
+# Gobernanza
+##############################################################
 variable "profile" {
-  type = string
-  description = "Profile name containing the access credentials to deploy the infrastructure on AWS"
-}
-
-variable "common_tags" {
-    type = map(string)
-    description = "Common tags to be applied to the resources"
+  type        = string
+  description = "Profile de ~/.aws/credentials para autenticación local. En CI/CD usar OIDC."
 }
 
 variable "aws_region_principal" {
-  type = string
-  description = "AWS region where resources will be deployed"
+  type        = string
+  description = "Región AWS principal donde se despliega el cluster."
+  validation {
+    condition     = length(var.aws_region_principal) > 0
+    error_message = "La región principal no puede estar vacía."
+  }
 }
 
 variable "aws_region_secondary" {
-  type = string
-  description = "AWS region where resources will be deployed"
+  type        = string
+  description = "Región AWS secundaria (para clusters multi-región). Usar la misma región si no se necesita multi-región."
 }
 
 variable "environment" {
-  type = string
-  description = "Environment where resources will be deployed"
+  type        = string
+  description = "Entorno de despliegue."
+  validation {
+    condition     = contains(["dev", "qa", "pdn", "staging", "prod"], var.environment)
+    error_message = "Entorno debe ser: dev, qa, pdn, staging o prod."
+  }
 }
 
 variable "client" {
-  type = string
-  description = "Client name"
+  type        = string
+  description = "Nombre del cliente — parte de la nomenclatura {client}-{project}-{environment}-..."
+  validation {
+    condition     = length(var.client) > 0 && length(var.client) <= 10
+    error_message = "El cliente debe tener entre 1 y 10 caracteres."
+  }
 }
 
 variable "project" {
-  type = string  
-  description = "Project name"
+  type        = string
+  description = "Nombre del proyecto."
+  validation {
+    condition     = length(var.project) > 0 && length(var.project) <= 15
+    error_message = "El proyecto debe tener entre 1 y 15 caracteres."
+  }
 }
 
 variable "service" {
-  type = string
-  description = "Service name"
+  type        = string
+  description = "Nombre del servicio — sufijo en la nomenclatura (ej: db)."
 }
 
-###########################################
-############# RDS variables ###############
-###########################################
-
-variable "create_global_cluster" {
-  type = bool 
-  description = "If true, a global cluster will be created"
+variable "common_tags" {
+  type        = map(string)
+  description = "Tags comunes aplicados a todos los recursos vía default_tags del provider."
+  default     = {}
 }
 
-variable "serverless_deploy" {
-  type = bool 
-  description = "If true, a serverless deploy will be executed"
-}
-
-variable "cluster_application" {
-  type = string  
-  description = "Cluster application name"
-}
-
-variable "engine" {
-  type = string  
-  description = "Name of the database engine to be used for this DB cluster. Valid Values: aurora-mysql, aurora-postgresql, mysql, postgres. (Note that mysql and postgres are Multi-AZ RDS clusters)."
-}
-
-variable "engine_version" {
-  type = string  
-  description = "Database engine version."
-}
-
-variable "database_name" {
-  type = string  
-  description = "Data base name"
-}
-
-variable "deletion_protection" {
-  type = bool  
-  description = "If the DB cluster should have deletion protection enabled. The database can't be deleted when this value is set to true. The default is false."
-}
-
-variable "principal" {
-  type = bool 
-  description = "If true, it'll be deploy only one node."
-}
-
-variable "engine_mode" {
-  type = string
-  description = "Database engine mode. Valid values: global (only valid for Aurora MySQL 1.21 and earlier), parallelquery, provisioned, serverless. Defaults to: provisioned. See the RDS User Guide for limitations when using serverless."
-}
-
-variable "manage_master_user_password" {
-  type = bool
-  description = "Set to true to allow RDS to manage the master user password in Secrets Manager. Cannot be set if master_password is provided."
-}
-
-variable "master_password" {
-  type    = string
-  default = null
-  description = "(Required unless manage_master_user_password is set to true or unless a snapshot_identifier or replication_source_identifier is provided or unless a global_cluster_identifier is provided when the cluster is the 'secondary' cluster of a global database) Password for the master DB user. Note that this may show up in logs, and it will be stored in the state file. Please refer to the RDS Naming Constraints. Cannot be set if manage_master_user_password is set to true."
-}
-
-variable "master_username" {
-  type = string
-  description = "Master username for the database"
-}
-
-variable "backup_retention_period" {
-  type = number
-  description = "Days to retain backups for. Default 1."
-}
-
-variable "skip_final_snapshot" {
-  type = bool
-  description = "Determines whether a final DB snapshot is created before the DB cluster is deleted. If true is specified, no DB snapshot is created. If false is specified, a DB snapshot is created before the DB cluster is deleted, using the value from final_snapshot_identifier. Default is false."
-}
-
-variable "preferred_backup_window" {
-  type = string
-  description = "Daily time range during which the backups happen"
-}
-
-variable "storage_encrypted" {
-  type = bool
-  description = "Service"
-}
-
-variable "kms_key_id_principal" {
-  type = string
-  description = "Amazon Web Services KMS key identifier that is used to encrypt the secret."
-}
-
-variable "kms_key_id_secondary" {
-  type = string
-  description = "Amazon Web Services KMS key identifier that is used to encrypt the secret."
-}
-
-variable "port" {
-  type = string
-  description = "Database port "
-}
-
-variable "copy_tags_to_snapshot" {
-  type = string
-  description = "Copy all Cluster tags to snapshots. Default is false."
-}
-
-variable "enable_http_endpoint" {
-  type = bool
-  description = "Enable data API for Aurora Serverless. Default is false."  
-}
-
-variable "family" {
-  type = string
-  description = "The family of the DB cluster parameter group."
-}
-
-variable "instance_class" {
-  type = string
-  description = "Instance class to use. For details on CPU and memory, see Scaling Aurora DB Instances. Aurora uses db.* instance classes/types. Please see AWS Documentation for currently available instance classes and complete details. For Aurora Serverless v2 use db.serverless."
-}
-
-variable "publicly_accessible" {
-  type = bool
-  description = "Bool to control if instance is publicly accessible. Default false. See the documentation on Creating DB Instances for more details on controlling this property."
-}
-
-variable "auto_minor_version_upgrade" {
-  type = bool
-  description = "Indicates that minor engine upgrades will be applied automatically to the DB instance during the maintenance window. Default true."
-}
-
-variable "performance_insights_enabled" {
-  type = bool
-  description = "Specifies whether Performance Insights is enabled or not. NOTE: When Performance Insights is configured at the cluster level through aws_rds_cluster, this argument cannot be set to a value that conflicts with the cluster's configuration."
-}
-
-variable "performance_insights_retention_period" {
-  type    = number
-  default = null
-  description = "Specifies the amount of time to retain performance insights data for. Defaults to 7 days if Performance Insights are enabled. Valid values are 7, month * 31 (where month is a number of months from 1-23), and 731."
-}
-
-variable "performance_insights_kms_key_id" {
-  type    = string
-  default = null
-  description = "Amazon Resource Name (ARN) of the KMS key to encrypt Performance Insights data. When specifying performance_insights_kms_key_id, performance_insights_enabled needs to be set to true."
-}
-
-variable "monitoring_interval" {
-  type = number
-  description = "Interval, in seconds, between points when Enhanced Monitoring metrics are collected for the DB instance. To disable collecting Enhanced Monitoring metrics, specify 0. The default is 0. Valid Values: 0, 1, 5, 10, 15, 30, 60."
-}
-
-variable "monitoring_role_arn" {
-  type = string
-  description = "Role requiered to enable Enhanced Monitoring metrics for the DB instance."
-}
-
-variable "enabled_cloudwatch_logs_exports" {
-  type = list(string)
-  description = "Enable CloudWatch logs exports. Values audit, error, general, iam-db-auth-error, instance, postgresql, slowquery, upgrade"
-}
-
-variable "scaling_max_capacity" {
-  type = number
-  description = "Maximum capacity for an Aurora DB cluster in serverless DB engine mode. Valid Aurora MySQL capacity values are 1, 2, 4, 8, 16, 32, 64, 128, 256. Valid Aurora PostgreSQL capacity values are (2, 4, 8, 16, 32, 64, 192, and 384)."
-  default = null
-}
-
-variable "scaling_min_capacity" {
-  type = number
-  description = "Minimum capacity for an Aurora DB cluster in serverless DB engine mode. Valid Aurora MySQL capacity values are 1, 2, 4, 8, 16, 32, 64, 128, 256. Valid Aurora PostgreSQL capacity values are (2, 4, 8, 16, 32, 64, 192, and 384)."
-  default = null
-}
-
-variable "scaling_seconds_until_auto_pause" {
-  type = number
-  description = "Time, in seconds, before an Aurora DB cluster in serverless mode is paused. Valid values are 300 through 86400"
-  default = null
+##############################################################
+# RDS — map(object) para estabilidad en for_each (PC-IAC-002/010)
+# IDs vacíos son inyectados por locals.tf desde data sources (PC-IAC-026)
+##############################################################
+variable "rds_config" {
+  type = map(object({
+    create_global_cluster = bool
+    engine                = string
+    engine_version        = string
+    database_name         = string
+    deletion_protection   = bool
+    storage_encrypted     = optional(bool, true)
+    serverless_deploy     = optional(bool, false)
+    cluster_config = list(object({
+      principal                       = bool
+      region                          = string
+      engine_mode                     = string
+      manage_master_user_password     = optional(bool, true)
+      master_password                 = optional(string, "")
+      master_username                 = string
+      vpc_security_group_ids          = optional(list(string), [])
+      subnet_ids                      = optional(list(string), [])
+      backup_retention_period         = number
+      skip_final_snapshot             = optional(bool, true)
+      preferred_backup_window         = string
+      storage_encrypted               = optional(bool, true)
+      kms_key_id                      = optional(string, "")
+      port                            = string
+      service                         = string
+      enabled_cloudwatch_logs_exports = list(string)
+      copy_tags_to_snapshot           = optional(bool, true)
+      enable_http_endpoint            = optional(bool, false)
+      cluster_parameter = object({
+        family      = string
+        description = string
+        parameters  = list(object({ name = string, value = string, apply_method = string }))
+      })
+      cluster_scaling_configuration = optional(object({
+        max_capacity             = number
+        min_capacity             = number
+        seconds_until_auto_pause = optional(number, 3600)
+      }), null)
+      instance_parameter = object({
+        family     = string
+        parameters = list(object({ name = string, value = string, apply_method = string }))
+      })
+      cluster_instances = list(object({
+        record_id                             = optional(string, "instance-1")
+        instance_class                        = string
+        publicly_accessible                   = optional(bool, false)
+        auto_minor_version_upgrade            = optional(bool, true)
+        performance_insights_enabled          = optional(bool, false)
+        performance_insights_retention_period = optional(number, 7)
+        performance_insights_kms_key_id       = optional(string, "")
+        monitoring_interval                   = optional(number, 0)
+        monitoring_role_arn                   = optional(string, "")
+      }))
+    }))
+  }))
+  description = "Mapa de clusters Aurora RDS. Ver terraform.tfvars.sample para ejemplos de ambos modos."
+  default     = {}
 }

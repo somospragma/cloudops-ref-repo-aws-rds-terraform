@@ -1,72 +1,156 @@
-###########################################
-########## Common variables ###############
-###########################################
+##############################################################
+# PC-IAC-026: terraform.tfvars — configuración declarativa SIN IDs hardcodeados
+# Los IDs dinámicos (VPC, SG, subnets, KMS) son inyectados en locals.tf desde data sources
+##############################################################
 
-profile     = "profile01"
-aws_region  = "us-east-1"
+# ---- Gobernanza ----
+profile              = "my-aws-profile"   # Reemplazar con tu profile de ~/.aws/credentials
+aws_region_principal = "us-east-1"
+aws_region_secondary = "us-east-2"        # Solo si multi-región; si no, usar la misma región
+
 environment = "dev"
 client      = "pragma"
 project     = "idp"
+service     = "db"
+
 common_tags = {
-  environment   = "dev"
-  project-name  = "proyecto01"
-  cost-center   = "123"
-  owner         = "Acme"
-  area          = "TI"
-  provisioned   = "terraform"
-  datatype      = "db"
+  environment = "dev"
+  project     = "idp"
+  client      = "pragma"
+  owner       = "cloudops"
+  cost-center = "123"
+  area        = "infrastructure"
+  provisioned = "terraform"
 }
 
-###########################################
-############## RDS variables ##############
-###########################################
+##############################################################
+# rds_config — map(object) para estabilidad en for_each
+# Dos ejemplos documentados: serverless v2 y instancia provisionada
+# Solo dejar activo el que necesites
+##############################################################
 
-aws_region_principal                      = "us-east-1"
-aws_region_secondary                      = "us-west-2"
+rds_config = {
 
-create_global_cluster                     = false                             # Create a global cluster
-serverless_deploy                         = true
-cluster_application                       = "serverless-sample"                          
-engine                                    = "aurora-postgresql"                    
-engine_version                            = "16.6"         
-database_name                             = "sample"                          
-deletion_protection                       = true                             # Enable deletion protection
+  # ---- Ejemplo A: Aurora Serverless v2 (db.serverless) ----
+  "backstage" = {
+    create_global_cluster = false
+    engine                = "aurora-postgresql"
+    engine_version        = "16.6"
+    database_name         = "backstage"
+    deletion_protection   = true
+    storage_encrypted     = true
+    serverless_deploy     = true   # ← activa serverlessv2_scaling_configuration
 
-principal                                 = true                              
-region                                    = "us-east-1"                       # Lowest cost region
-engine_mode                               = "provisioned"                     
-manage_master_user_password               = true                             # true only when create_global_cluster is false       
-#master_password                          = ""                                # Master user password only if manage_master_user_password is false
-master_username                           = "master"                           
-backup_retention_period                   = 7                                 # Backup retention for 7 days
-skip_final_snapshot                       = true                              # Don't take final snapshot
-preferred_backup_window                   = "00:00-00:30"                     # Backup window
-storage_encrypted                         = true                              # No storage encryption
-kms_key_id_principal                      = "arn:aws:kms:us-east-1:008971642453:key/2a9dd3ab-d630-487a-b8ce-65c13dbf180f"
-kms_key_id_secondary                      = "arn:aws:kms:us-west-2:008971642453:key/11842d1a-81ff-4ee2-9598-94ac02d0615f"
-port                                      = "3306"                            
-service                                   = "default"                         
-enabled_cloudwatch_logs_exports           = ["postgresql","iam-db-auth-error"]                                
-copy_tags_to_snapshot                     = true                              # Copy tags to snapshots
-enable_http_endpoint                      = true
-family                                    = "aurora-postgresql16"                       
+    cluster_config = [
+      {
+        principal                   = true
+        region                      = "us-east-1"
+        engine_mode                 = "provisioned"  # siempre provisioned para serverless v2
+        manage_master_user_password = true
+        master_username             = "master"
+        # vpc_security_group_ids e subnet_ids se inyectan en locals.tf
+        vpc_security_group_ids      = []
+        subnet_ids                  = []
+        backup_retention_period     = 7
+        skip_final_snapshot         = true
+        preferred_backup_window     = "03:00-04:00"
+        # kms_key_id inyectado en locals.tf
+        kms_key_id                  = ""
+        port                        = "5432"
+        service                     = "db"
+        enabled_cloudwatch_logs_exports = ["postgresql"]
+        copy_tags_to_snapshot       = true
+        enable_http_endpoint        = false
 
-# Type of instance, for example db.t3.medium. 
-# When using serverless use the value db.serverless. 
-# When using Aurora global use a Memory-optimized instance class type for example db.r5.large
-# An Aurora global database requires DB instance classes that are optimized for memory-intensive applications.
-# We recommend that you use a db.r5 or higher instance class.
-# https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-global-database.configuration.requirements.html          
-instance_class                            = "db.serverless" 
+        cluster_parameter = {
+          family      = "aurora-postgresql16"
+          description = "Cluster parameter group aurora-postgresql16"
+          parameters  = []
+        }
 
-publicly_accessible                       = false                             # Don't publicly expose the instance
-auto_minor_version_upgrade                = true                              # Automatic updates
-performance_insights_enabled              = true                              # Disable Performance Insights
-performance_insights_retention_period     = 7                                 # Keep 7 days of performance data
-performance_insights_kms_key_id           = "arn:aws:kms:us-east-1:008971642453:key/2a9dd3ab-d630-487a-b8ce-65c13dbf180f"
-monitoring_interval                       = 30   
-monitoring_role_arn                       = "arn:aws:iam::008971642453:role/rds-monitoring-role"
+        # Requerido cuando serverless_deploy = true
+        cluster_scaling_configuration = {
+          max_capacity             = 2
+          min_capacity             = 0.5
+          seconds_until_auto_pause = 3600
+        }
 
-scaling_max_capacity                      = 1
-scaling_min_capacity                      = 0
-scaling_seconds_until_auto_pause          = 86400
+        instance_parameter = {
+          family     = "aurora-postgresql16"
+          parameters = []
+        }
+
+        cluster_instances = [
+          {
+            record_id                             = "instance-1"
+            instance_class                        = "db.serverless"  # obligatorio para serverless v2
+            publicly_accessible                   = false
+            auto_minor_version_upgrade            = true
+            performance_insights_enabled          = true   # soportado en db.serverless
+            performance_insights_retention_period = 7
+            # kms para PI inyectado en locals.tf — dejar vacío aquí
+            performance_insights_kms_key_id       = ""
+            monitoring_interval                   = 0
+            monitoring_role_arn                   = ""
+          }
+        ]
+      }
+    ]
+  }
+
+  # ---- Ejemplo B: Instancia provisionada (db.t3.medium) ----
+  # Descomentar para usar este modo
+  # "backstage-prov" = {
+  #   create_global_cluster = false
+  #   engine                = "aurora-postgresql"
+  #   engine_version        = "16.6"
+  #   database_name         = "backstage"
+  #   deletion_protection   = true
+  #   storage_encrypted     = true
+  #   serverless_deploy     = false   # ← instancia provisionada
+  #
+  #   cluster_config = [
+  #     {
+  #       principal                   = true
+  #       region                      = "us-east-1"
+  #       engine_mode                 = "provisioned"
+  #       manage_master_user_password = true
+  #       master_username             = "master"
+  #       vpc_security_group_ids      = []
+  #       subnet_ids                  = []
+  #       backup_retention_period     = 7
+  #       skip_final_snapshot         = true
+  #       preferred_backup_window     = "03:00-04:00"
+  #       kms_key_id                  = ""
+  #       port                        = "5432"
+  #       service                     = "db"
+  #       enabled_cloudwatch_logs_exports = ["postgresql"]
+  #       copy_tags_to_snapshot       = true
+  #       enable_http_endpoint        = false
+  #       cluster_parameter = {
+  #         family      = "aurora-postgresql16"
+  #         description = "Cluster parameter group aurora-postgresql16"
+  #         parameters  = []
+  #       }
+  #       cluster_scaling_configuration = null  # ignorado cuando serverless_deploy=false
+  #       instance_parameter = {
+  #         family     = "aurora-postgresql16"
+  #         parameters = []
+  #       }
+  #       cluster_instances = [
+  #         {
+  #           record_id                             = "instance-1"
+  #           instance_class                        = "db.t3.medium"
+  #           publicly_accessible                   = false
+  #           auto_minor_version_upgrade            = true
+  #           performance_insights_enabled          = false   # db.t3.medium NO soporta PI
+  #           performance_insights_retention_period = 7
+  #           performance_insights_kms_key_id       = ""
+  #           monitoring_interval                   = 0
+  #           monitoring_role_arn                   = ""
+  #         }
+  #       ]
+  #     }
+  #   ]
+  # }
+}

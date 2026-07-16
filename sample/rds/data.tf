@@ -1,4 +1,10 @@
-data "aws_vpc" "vpc_hefesto_p" {
+# PC-IAC-011: Data sources para obtener IDs dinámicos de la VPC, subnets, SG y KMS
+# PC-IAC-026: Los IDs se inyectan en locals.tf — NO se hardcodean en terraform.tfvars
+
+##############################################################
+# VPC — principal
+##############################################################
+data "aws_vpc" "principal" {
   provider = aws.principal
   filter {
     name   = "tag:Name"
@@ -6,114 +12,44 @@ data "aws_vpc" "vpc_hefesto_p" {
   }
 }
 
-data "aws_subnet" "database_subnet_1_p" {
+##############################################################
+# Subnets de base de datos — principal
+# PC-IAC-003: nomenclatura {client}-{project}-{environment}-subnet-database-*
+##############################################################
+data "aws_subnets" "database_principal" {
+  provider = aws.principal
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.principal.id]
+  }
+  filter {
+    name   = "tag:tier"
+    values = ["database"]
+  }
+}
+
+##############################################################
+# Security Group RDS — principal
+##############################################################
+data "aws_security_group" "rds_principal" {
   provider = aws.principal
   filter {
     name   = "tag:Name"
-    values = ["${var.client}-${var.project}-${var.environment}-subnet-database-1"] 
+    values = ["${var.client}-${var.project}-${var.environment}-sg-rds-${var.service}"]
   }
 }
 
-data "aws_subnet" "database_subnet_2_p" {
+##############################################################
+# KMS key para cifrado RDS — principal
+##############################################################
+data "aws_kms_alias" "rds_principal" {
   provider = aws.principal
-  filter {
-    name   = "tag:Name"
-    values = ["${var.client}-${var.project}-${var.environment}-subnet-database-2"] 
-  }
+  name     = "alias/${var.client}-${var.project}-${var.environment}-kms-rds-${var.service}"
 }
 
-data "aws_subnet" "private_subnet_1_p" {
+##############################################################
+# Caller identity (para referencias a la cuenta actual)
+##############################################################
+data "aws_caller_identity" "current" {
   provider = aws.principal
-  filter {
-    name   = "tag:Name"
-    values = ["${var.client}-${var.project}-${var.environment}-subnet-private-1"] 
-  }
-}
-
-data "aws_subnet" "private_subnet_2_p" {
-  provider = aws.principal
-  filter {
-    name   = "tag:Name"
-    values = ["${var.client}-${var.project}-${var.environment}-subnet-private-2"] 
-  }
-}
-
-data "aws_security_group" "rds_security_group_p" {
-  provider = aws.principal
-  filter {
-    name   = "tag:Name"
-    values = ["${var.client}-${var.project}-${var.environment}-sg-rds-bs"] 
-  }
-}
-
-data "aws_vpc" "vpc_hefesto_s" {
-  provider = aws.secondary
-  filter {
-    name   = "tag:Name"
-    values = ["${var.client}-${var.project}-${var.environment}-vpc"]
-  }
-}
-
-data "aws_subnet" "database_subnet_1_s" {
-  provider = aws.secondary
-  filter {
-    name   = "tag:Name"
-    values = ["${var.client}-${var.project}-${var.environment}-subnet-database-1"] 
-  }
-}
-
-data "aws_subnet" "database_subnet_2_s" {
-  provider = aws.secondary
-  filter {
-    name   = "tag:Name"
-    values = ["${var.client}-${var.project}-${var.environment}-subnet-database-2"] 
-  }
-}
-
-data "aws_subnet" "private_subnet_1_s" {
-  provider = aws.secondary
-  filter {
-    name   = "tag:Name"
-    values = ["${var.client}-${var.project}-${var.environment}-subnet-private-1"] 
-  }
-}
-
-data "aws_subnet" "private_subnet_2_s" {
-  provider = aws.secondary
-  filter {
-    name   = "tag:Name"
-    values = ["${var.client}-${var.project}-${var.environment}-subnet-private-2"] 
-  }
-}
-
-data "aws_security_group" "rds_security_group_s" {
-  provider = aws.secondary
-  filter {
-    name   = "tag:Name"
-    values = ["${var.client}-${var.project}-${var.environment}-sg-rds-bs"] 
-  }
-}
-
-data "aws_caller_identity" "current" {}
-
-# Test secret manager
-
-data "aws_secretsmanager_secret" "example_p" {
-  provider = aws.principal
-  name = "dev/rds/aurora/serverless" # Replace with your secret name
-}
-
-data "aws_secretsmanager_secret_version" "current_p" {
-  provider = aws.principal
-  secret_id = data.aws_secretsmanager_secret.example_p.id
-}
-
-data "aws_secretsmanager_secret" "example_s" {
-  provider = aws.secondary
-  name = "dev/rds/aurora/serverless" # Replace with your secret name
-}
-
-data "aws_secretsmanager_secret_version" "current_s" {
-  provider = aws.secondary
-  secret_id = data.aws_secretsmanager_secret.example_s.id
 }
